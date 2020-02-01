@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="recognize_speech" type="speech_recognition_demo" name="speech_recognition_demo" output="screen">
+    </node>
+</launch>
