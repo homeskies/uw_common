@@ -5,18 +5,21 @@ import rospy
 import httplib2 as httplib
 from std_msgs.msg import String
 import speech_recognition as sr
+from speech_recognition import Recognizer, Microphone
 
 class Speech(object):
 
     def __init__(self):
-        rospy.init_node("speech_recognizer")
+        rospy.init_node("speech")
         self.pub = rospy.Publisher("speech_recognizer", String, latch=True, queue_size=1)
-        self.recognizer = sr.Recognizer()
-        self.microphone = sr.Microphone()
+        self.recognizer = Recognizer()
+        # self.recognizer.energy_threshold = 1000
+        # self.recognizer.pause_threshold = .7
+        self.microphone = Microphone()
 
     @staticmethod
     def check_internet_connection():
-        connection = httplib.HTTPConnection("www.google.com", timeout=5)
+        connection = httplib.HTTPConnectionWithTimeout("www.google.com", timeout=5) #
         try:
             connection.request("HEAD", "/")
             connection.close()
@@ -25,13 +28,23 @@ class Speech(object):
             connection.close()
             return False
 
-    def recognizeHelper(recognized_speech):
+    def __recognizeHelper(self, recognized_speech):
         '''
         Once speech obtained do TODO:something with it
         '''
+        print(recognized_speech)
         if recognized_speech != "":
             rospy.loginfo("You said: " + recognized_speech)
             self.pub.publish(recognized_speech)
+
+    def __microphoneHelper(self, ):
+        rospy.loginfo('Listening...')
+        with self.microphone as source:
+            #If phase_time_limit is not set to 5 it will take a really long time every 3-4th attempt
+            audio = self.recognizer.listen(source, phrase_time_limit=5)
+        rospy.loginfo('Got a sound; recognizing...')
+        return audio
+
 
     def recognizeGoogle(self):
         with self.microphone as source:
@@ -39,13 +52,9 @@ class Speech(object):
 
         try:
             while not rospy.is_shutdown():
-                rospy.loginfo('Listening...')
-                with self.microphone as source:
-                    audio = self.recognizer.listen(source)
-                rospy.loginfo('Got a sound; recognizing...')
-
+                audio = self.__microphoneHelper()
                 recognized_speech = ""
-                if SpeechRecognizer.check_internet_connection():
+                if Speech.check_internet_connection():
                     try:
                         recognized_speech = self.recognizer.recognize_google(audio)
                     except sr.UnknownValueError:
@@ -55,7 +64,7 @@ class Speech(object):
                 else:
                     rospy.logerr("No internet conneciton for Google API")
 
-                recognizeHelper(recognized_speech)
+                self.__recognizeHelper(recognized_speech)
 
         except Exception as exc:
             rospy.logerr(exc)
@@ -63,14 +72,9 @@ class Speech(object):
     def recognizeSphynix(self):
         with self.microphone as source:
             self.recognizer.adjust_for_ambient_noise(source)
-
         try:
             while not rospy.is_shutdown():
-                rospy.loginfo('Listening...')
-                with self.microphone as source:
-                    audio = self.recognizer.listen(source)
-                rospy.loginfo('Got a sound; recognizing...')
-
+                audio = self.__microphoneHelper()
                 recognized_speech = ""
 
                 try:
@@ -78,7 +82,7 @@ class Speech(object):
                 except sr.UnknownValueError:
                     rospy.logerr("Could not understand audio.")
                 except sr.RequestError:
-                    rospy.logerr("Could not request results.")
+                    rospy.logerr("Could not request results. Do you have pocket Sphynx installed?")
+                self.__recognizeHelper(recognized_speech)
         except Exception as exc:
             rospy.logerr(exc)
-        recognizeHelper(recognized_speech)
