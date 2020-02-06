@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-# from speech import Speech
-from speech import Speech
+import recognize_speech as rs
+import rospy
 
 def main():
-    speaker = Speech()
-    speaker.recongizeGoogle()
+    speech = rs.Speech()
+    speech.recognizeGoogle()
     rospy.spin()
 
 if __name__ == '__main__':
