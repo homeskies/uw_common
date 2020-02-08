@@ -10,7 +10,6 @@ catkin_python_setup()
 
 catkin_package()
 
-# TODO: is this needed?
-install(DIRECTORY ros/launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/ros/launch
+install(DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}launch
 )

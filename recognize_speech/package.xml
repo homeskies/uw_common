@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>recognize_speech</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>package of services related to speech recognition for robot</description>
 
-  <maintainer email="email@example.com">UW Homeskies</maintainer>
+  <maintainer email="robocup@cs.washington.edu">UW RoboCup Contributors</maintainer>
+  
+  <author email="robocup@cs.washington.edu">UW RoboCup Contributors</author>
 
-  <author email="esneh@cs.washington.edu">Edan Sneh</author>
-
-
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>BSD</license>
+  <license>MIT</license>
 
   <build_depend>rospy</build_depend>
+
+  <build_depend>portaudio19-dev</build_depend>
+  <build_depend>swig</build_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 

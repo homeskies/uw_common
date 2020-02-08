@@ -2,10 +2,11 @@
 from __future__ import print_function
 import sys
 import rospy
-import httplib2 as httplib
+import httplib2
 from std_msgs.msg import String
 import speech_recognition as sr
 from speech_recognition import Recognizer, Microphone
+
 
 class Speech(object):
 
@@ -19,12 +20,12 @@ class Speech(object):
 
     @staticmethod
     def check_internet_connection():
-        connection = httplib.HTTPConnectionWithTimeout("www.google.com", timeout=5) #
+        connection = httplib2.HTTPConnectionWithTimeout("www.google.com", timeout=5)
         try:
             connection.request("HEAD", "/")
             connection.close()
             return True
-        except:
+        except httplib2.HttpLib2Error:
             connection.close()
             return False
 
@@ -40,11 +41,11 @@ class Speech(object):
     def __microphoneHelper(self, ):
         rospy.loginfo('Listening...')
         with self.microphone as source:
-            #If phase_time_limit is not set to 5 it will take a really long time every 3-4th attempt
+            # If phase_time_limit is not set to 5 it will
+            # take a really long time every 3-4th attempt
             audio = self.recognizer.listen(source, phrase_time_limit=5)
         rospy.loginfo('Got a sound; recognizing...')
         return audio
-
 
     def recognizeGoogle(self):
         with self.microphone as source:
@@ -82,7 +83,8 @@ class Speech(object):
                 except sr.UnknownValueError:
                     rospy.logerr("Could not understand audio.")
                 except sr.RequestError:
-                    rospy.logerr("Could not request results. Do you have pocket Sphynx installed?")
+                    rospy.logerr("""Could not request results. Do you have
+                     pocket Sphynx installed?""")
                 self.__recognizeHelper(recognized_speech)
         except Exception as exc:
             rospy.logerr(exc)
