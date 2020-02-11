@@ -55,7 +55,6 @@
 
   <depend>rviz_camera_stream</depend>
   <depend>robocup_teleop_msgs</depend>
-  <depend>fetch_api</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
