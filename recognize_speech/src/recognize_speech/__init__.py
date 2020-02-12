@@ -1,1 +1,1 @@
-from .speech import Speech # noqa
+from .speech import Speech
