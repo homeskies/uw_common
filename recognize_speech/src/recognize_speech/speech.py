@@ -28,7 +28,7 @@ class Speech(object):
             connection.close()
             return False
 
-    def __recognizeHelper(self, recognized_speech):
+    def __recognize_helper(self, recognized_speech):
         '''
         Once speech obtained do TODO:something with it
         '''
@@ -37,7 +37,7 @@ class Speech(object):
             rospy.loginfo("You said: " + recognized_speech)
             self.pub.publish(recognized_speech)
 
-    def __microphoneHelper(self, ):
+    def __microphone_helper(self, ):
         rospy.loginfo('Listening...')
         with self.microphone as source:
             # If phase_time_limit is not set to 5 it will
@@ -46,13 +46,13 @@ class Speech(object):
         rospy.loginfo('Got a sound; recognizing...')
         return audio
 
-    def recognizeGoogle(self):
+    def recognize_google(self):
         with self.microphone as source:
             self.recognizer.adjust_for_ambient_noise(source)
 
         try:
             while not rospy.is_shutdown():
-                audio = self.__microphoneHelper()
+                audio = self.__microphone_helper()
                 recognized_speech = ""
                 if Speech.check_internet_connection():
                     try:
@@ -64,17 +64,17 @@ class Speech(object):
                 else:
                     rospy.logerr("No internet conneciton for Google API")
 
-                self.__recognizeHelper(recognized_speech)
+                self.__recognize_helper(recognized_speech)
 
         except Exception as exc:
             rospy.logerr(exc)
 
-    def recognizeSphynix(self):
+    def recognize_sphynix(self):
         with self.microphone as source:
             self.recognizer.adjust_for_ambient_noise(source)
         try:
             while not rospy.is_shutdown():
-                audio = self.__microphoneHelper()
+                audio = self.__microphone_helper()
                 recognized_speech = ""
 
                 try:
@@ -84,6 +84,6 @@ class Speech(object):
                 except sr.RequestError:
                     rospy.logerr("""Could not request results. Do you have
                      pocket Sphynx installed?""")
-                self.__recognizeHelper(recognized_speech)
+                self.__recognize_helper(recognized_speech)
         except Exception as exc:
             rospy.logerr(exc)
