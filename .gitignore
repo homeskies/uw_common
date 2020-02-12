@@ -56,3 +56,4 @@ tags
 *.swo
 .idea
 cmake-build-debug
+/robocup_teleop/frontend/node_modules

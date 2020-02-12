@@ -1,0 +1,4 @@
+<launch>
+  <include file="$(find uw_gazebo)/launch/house_simulation.launch" />
+  <node pkg="web_teleop" type="actuators_node.py" name="web_teleop_actuators" />
+</launch>
