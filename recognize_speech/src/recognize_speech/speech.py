@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
 import rospy
 import httplib2
 from std_msgs.msg import String
@@ -33,10 +32,10 @@ class Speech(object):
         '''
         Once speech obtained do TODO:something with it
         '''
-        print(recognized_speech)
         if recognized_speech != "":
             rospy.loginfo("You said: " + recognized_speech)
             self.pub.publish(recognized_speech)
+        return recognized_speech
 
     def __microphoneHelper(self, ):
         rospy.loginfo('Listening...')
@@ -65,7 +64,7 @@ class Speech(object):
                 else:
                     rospy.logerr("No internet conneciton for Google API")
 
-                self.__recognizeHelper(recognized_speech)
+                return self.__recognizeHelper(recognized_speech)
 
         except Exception as exc:
             rospy.logerr(exc)
@@ -85,6 +84,6 @@ class Speech(object):
                 except sr.RequestError:
                     rospy.logerr("""Could not request results. Do you have
                      pocket Sphynx installed?""")
-                self.__recognizeHelper(recognized_speech)
+                return self.__recognizeHelper(recognized_speech)
         except Exception as exc:
             rospy.logerr(exc)

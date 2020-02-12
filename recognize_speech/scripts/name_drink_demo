@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import recognize_speech as rs
+import rospy
+
+
+def main():
+    nameList = ["jessica", "allison", "fred", "jeff", "brian", "ashley"]
+    drinkList = ["water", "punch", "root beer"]
+    speech = rs.Speech()
+    resultName = None
+    resultDrink = None
+    print("Can you please provide your name and drink?")
+    tries = 5
+    remaining = tries
+    while (resultName is None or resultDrink is None) and remaining != 0:
+        if tries != remaining:
+            if resultName is None and resultDrink is None:
+                print("Sorry I didnt quite catch that")
+            elif resultName is None:
+                print("Can you please repeat your name")
+            elif resultDrink is None:
+                print("Can you please repeat your favorite drink")
+        text = speech.recognizeGoogle()
+        lowerText = text.lower()
+        if resultName is None:
+            for name in nameList:
+                if name.lower() in lowerText:
+                    resultName = name
+                    break
+
+        if resultDrink is None:
+            for drink in drinkList:
+                if drink.lower() in lowerText:
+                    resultDrink = drink
+                    break
+        remaining -= 1
+    # bad path, robot failed to recognize speech
+    if resultName is None or resultDrink is None:
+        return None
+    # good path, robot recognized name and drink
+    result = (resultName, resultDrink)
+    print("Hi, " + result[0] + " let me get you a " + result[1])
+    return result
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    main()
