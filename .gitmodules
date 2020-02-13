@@ -1,0 +1,3 @@
+[submodule "recognize_speech/recognize_speech/src/recognize_speech/gpsr_command_understand"]
+	path = recognize_speech/recognize_speech/src/recognize_speech/gpsr_command_understand
+	url = https://github.com/EdanSneh/gpsr-command-understanding.git

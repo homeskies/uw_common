@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import recognize_speech as rs
+
+
+def main():
+    generator = rs.Generator(grammar_format_version=2019)
+    grammar = generator.load_rules("grammar.txt", expand_shorthand=False)
+    parser = rs.GrammarBasedParser(grammar)
+    test = parser("say hi to him right now please")
+    print(test.pretty())
+    test = parser("bring it to {pron} now")
+    print(test.pretty())
+    # rospy.spin()
+
+
+if __name__ == '__main__':
+    main()

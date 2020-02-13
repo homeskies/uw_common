@@ -1,1 +1,4 @@
 from .speech import Speech
+import importlib
+from gpsr_command_understanding.gpsr_command_understanding.parser import GrammarBasedParser
+from gpsr_command_understanding.gpsr_command_understanding.generator import Generator
