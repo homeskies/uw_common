@@ -5,41 +5,41 @@ import rospy
 
 
 def main():
-    nameList = ["jessica", "allison", "fred", "jeff", "brian", "ashley"]
-    drinkList = ["water", "punch", "root beer"]
+    name_list = ["jessica", "allison", "fred", "jeff", "brian", "ashley"]
+    drink_list = ["water", "punch", "root beer"]
     speech = rs.Speech()
-    resultName = None
-    resultDrink = None
+    result_name = None
+    result_drink = None
     print("Can you please provide your name and drink?")
     tries = 5
     remaining = tries
-    while (resultName is None or resultDrink is None) and remaining != 0:
+    while (result_name is None or result_drink is None) and remaining != 0:
         if tries != remaining:
-            if resultName is None and resultDrink is None:
+            if result_name is None and result_drink is None:
                 print("Sorry I didnt quite catch that")
-            elif resultName is None:
+            elif result_name is None:
                 print("Can you please repeat your name")
-            elif resultDrink is None:
+            elif result_drink is None:
                 print("Can you please repeat your favorite drink")
         text = speech.recognizeGoogle()
-        lowerText = text.lower()
-        if resultName is None:
-            for name in nameList:
-                if name.lower() in lowerText:
-                    resultName = name
+        lower_text = text.lower()
+        if result_name is None:
+            for name in name_list:
+                if name.lower() in lower_text:
+                    result_name = name
                     break
 
-        if resultDrink is None:
-            for drink in drinkList:
-                if drink.lower() in lowerText:
-                    resultDrink = drink
+        if result_drink is None:
+            for drink in drink_list:
+                if drink.lower() in lower_text:
+                    result_drink = drink
                     break
         remaining -= 1
     # bad path, robot failed to recognize speech
-    if resultName is None or resultDrink is None:
+    if result_name is None or result_drink is None:
         return None
     # good path, robot recognized name and drink
-    result = (resultName, resultDrink)
+    result = (result_name, result_drink)
     print("Hi, " + result[0] + " let me get you a " + result[1])
     return result
     rospy.spin()

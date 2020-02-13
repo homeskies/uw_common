@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 160
+exclude = tests/*
+max-complexity = 10
+# We import modules here to make the API cleaner
+per-file-ignores = **/recognize_speech/__init__.py:F401
