@@ -52,7 +52,7 @@ class Speech(object):
 
         try:
             while not rospy.is_shutdown():
-                audio = self.__microphoneHelper()
+                audio = self.__microphone_helper()
                 recognized_speech = ""
                 if Speech.check_internet_connection():
                     try:
