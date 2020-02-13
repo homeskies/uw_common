@@ -1,0 +1,4 @@
+pyAudio
+SpeechRecognition
+httplib2
+pocketsphinx

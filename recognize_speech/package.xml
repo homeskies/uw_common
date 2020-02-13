@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>recognize_speech</name>
+  <version>1.0.0</version>
+  <description>package of services related to speech recognition for robot</description>
+
+  <maintainer email="robocup@cs.washington.edu">UW RoboCup Contributors</maintainer>
+  <author email="robocup@cs.washington.edu">UW RoboCup Contributors</author>
+
+  <license>MIT</license>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>roslint</build_depend>
+
+  <build_depend>portaudio19-dev</build_depend>
+  <build_depend>swig</build_depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <test_depend>roslaunch</test_depend>
+
+</package>
