@@ -201,7 +201,7 @@
 
       <div id="btns">
         <div id="torso">
-          <h3>Torso height: <b>[[_round(torsoHeight.data, 0.01)]]</b> meters</h3>
+          <h3>Torso height: [[_round(torsoHeight.data, 0.001)]] meters</h3>
           <paper-slider min="0" max="0.4" step="0.01" editable value="{{desiredTorsoHeight}}"></paper-slider>          
             <paper-button on-tap="_setTorso">Set torso</paper-button> 
         </div>
@@ -277,6 +277,14 @@
         this.$.torsoService.call({height: this.desiredTorsoHeight});
       }
 
+      _handleTorsoSuccess() {
+        this.status = 'Set torso to ' + this.desiredTorsoHeight + ' meters.';
+      }
+
+      _handleTorsoError(evt) {
+        this.status = 'Error: ' + evt.detail;
+      }
+
       _openGripper() {
         this.status =  'Opening gripper...';
         this.$.openGripperService.call({});
@@ -291,14 +299,6 @@
         this.status =  'Setting arm...';
         var desiredJoints = [this.desiredArm1, this.desiredArm2, this.desiredArm3, this.desiredArm4, this.desiredArm5, this.desiredArm6, this.desiredArm7];
         this.$.setArmService.call({joints: desiredJoints});
-      }
-
-      _handleTorsoSuccess() {
-        this.status = 'Set torso to ' + this.desiredTorsoHeight + ' meters.';
-      }
-
-      _handleTorsoError(evt) {
-        this.status = 'Error: ' + evt.detail;
       }
 
       _openGripperSuccess() {

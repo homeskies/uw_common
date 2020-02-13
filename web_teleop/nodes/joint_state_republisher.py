@@ -15,8 +15,8 @@ def wait_for_time():
 def main():
     rospy.init_node('joint_state_republisher')
     wait_for_time()
-    torso_pub = rospy.Publisher('joint_state_republisher/torso_lift_joint',
-                                Float64)
+    torso_pub = rospy.Publisher('/joint_state_republisher/torso_lift_joint',
+                                Float64, queue_size=10)
     reader = JointStateReader()
     rospy.sleep(0.5)
 

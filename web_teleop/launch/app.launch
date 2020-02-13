@@ -1,4 +1,5 @@
 <launch>
   <include file="$(find uw_gazebo)/launch/house_simulation.launch" />
   <node pkg="web_teleop" type="actuators_node.py" name="web_teleop_actuators" />
+  <node pkg="web_teleop" type="joint_state_republisher.py" name="joint_state_republisher" />
 </launch>
