@@ -6,7 +6,7 @@ import rospy
 
 def main():
     speech = rs.Speech()
-    speech.recognizeGoogle()
+    speech.recognize_google()
     rospy.spin()
 
 
