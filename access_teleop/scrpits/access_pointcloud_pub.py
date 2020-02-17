@@ -64,7 +64,7 @@ def main():
 
     rospy.init_node('pointcloud_saver')
     wait_for_time()
-    # pub = rospy.Publisher('access_teleop/point_cloud', PointCloud2, queue_size=1)
+    pub = rospy.Publisher('access_teleop/point_cloud', PointCloud2, queue_size=1)
 
     # world_pub = rospy.Publisher('/access_teleop/world_cloud', PointCloud2, queue_size=5)
     # rospy.sleep(0.5)

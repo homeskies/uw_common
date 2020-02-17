@@ -142,7 +142,7 @@
       <p style="color:#4B0082"><b>[[status]]</b></p>
 
       <div id="camera">
-        <img src="//[[hostname]]:8000/stream?topic=/head_camera/rgb/image_raw"></img>
+        <img src="//[[hostname]]:8080/stream?topic=/head_camera/rgb/image_raw"></img>
       </div>
 
       <div id="driving" class="layout vertical">
@@ -399,6 +399,7 @@
       _moveHeadSuccess() {
         this.status = 'Head stopped moving.';
       }
+
       _move(obj, direction) {
         obj.status = 'Driving ' + direction + '...';
         var baseTopic = this.$.baseTopic;  // Get <ros-topic>

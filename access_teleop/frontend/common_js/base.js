@@ -10,43 +10,12 @@ Base = function (ros) {
         messageType: 'geometry_msgs/Twist'
     });
 
-    // Set up the base publishers
-    var task = new ROSLIB.Topic({
-        ros: ros,
-        name: '/access_teleop/task_type',
-        messageType: 'access_teleop_msgs/TaskType'
-    });
-
-    this.changeModel = function(taskNum, changeToTaskNum) {
-        var changeToTask = new ROSLIB.Message({
-            delete_type: taskNum,
-            add_type: changeToTaskNum
-        });
-        task.publish(changeToTask);
-    };
-
-    // this.goToPrev = function(taskNum) {
-    //     var prevTask = new ROSLIB.Message({
-    //         task_type: taskNum
-    //     });
-    //     task.publish(prevTask);
-    // };
-
-    // this.goToNext = function(taskNum) {
-    //     var nextTask = new ROSLIB.Message({
-    //         task_type: taskNum
-    //     });
-    //     task.publish(nextTask);
-    // };
-
     this.adv = function() {
         baseTopic.advertise();
-        task.advertise();
     };
 
     this.unadv = function() {
         baseTopic.unadvertise();
-        task.unadvertise();
     };
 };
 

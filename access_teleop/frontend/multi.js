@@ -92,8 +92,6 @@ function init() {
     // Added by Xinyi
     var headUpBTN = document.getElementById("headUp");
     var headDownBTN = document.getElementById("headDown");
-    // var prevTaskBTN = document.getElementById("prevTask");
-    // var nextTaskBTN = document.getElementById("nextTask");
     // var cloudBTN = document.getElementById("freeze");
 
     // mouse down
@@ -133,36 +131,12 @@ function init() {
     });
 
     headUpBTN.addEventListener("mousedown", function() {
-		app.head.tilt(0.2);
+		app.head.tilt(0.15);
 	});
 
 	headDownBTN.addEventListener("mousedown", function() {
-		app.head.tilt(-0.2);
+		app.head.tilt(-0.15);
     });
-    
-    // prevTaskBTN.addEventListener("mousedown", function(e) {
-	// 	if (taskNum > 0) {
-	// 		app.base.changeModel(taskNum, taskNum - 1);
-	// 		taskNum--;
-	// 	}
-	// });
-
-	// nextTaskBTN.addEventListener("mousedown", function(e) {
-	// 	if (taskNum < 5) {
-	// 		app.base.changeModel(taskNum, taskNum + 1);
-	// 		taskNum++;
-	// 	}
-	// });
-
-    // cloudBTN.addEventListener("mousedown", function() {
-    //     if (cloudBTN.innerHTML == "Freeze") {
-    //         cloudBTN.innerHTML = "Unfreeze";
-    //         app.cloudFreezer.freezeCloud();
-    //     } else {
-    //         cloudBTN.innerHTML = "Freeze";
-    //         app.cloudFreezer.unfreezeCloud();
-    //     }
-    // });
 
     // for continuous motion: mouse up
     // var btns = [upBTN, downBTN, leftBTN, rightBTN, rotateRightBTN, rotateLeftBTN];

@@ -178,6 +178,7 @@ def absolute_modified_stamped_pose(x_distance, y_distance, camera_name, original
         raise ValueError('Did not pass in a valid camera_name')
     return modified_ps
 
+
 def add_marker(x_distance, y_distance, ps, camera_name, self):
     controls = InteractiveMarkerControl()
 

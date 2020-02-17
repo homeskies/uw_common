@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>robocup_teleop_msgs</name>
+  <name>access_teleop_msgs</name>
   <version>0.0.0</version>
-  <description>The robocup_teleop_msgs package</description>
+  <description>The access_teleop_msgs package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
