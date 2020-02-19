@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Runs mapping with reasonable configuration, and displays teleop. Ctrl-c teleop to
+# run map saver and cropper. Maps end up in this package.
+
+rospack find uw_knowledge || \
+(2>&1 echo "Can't locate uw_knowledge package. Is the workspace sourced?" && exit 1)
+
+# Start the mapping node in the background
+rosrun hector_mapping hector_mapping \
+   _map_size:=2048 _map_resolution:=0.05 \
+   _pub_map_odom_transform:=true \
+   _scan_topic:=/base_scan \
+   _use_tf_scan_transformation:=false \
+   _map_update_angle_thresh:=2.0 \
+   _map_update_distance_thresh:=0.10 \
+   _scan_subscriber_queue_size:=1 \
+   _update_factor_free:=0.39 \
+   _update_factor_occupied:=0.85 \
+   _base_frame:=base_link \
+   _map_frame:=map 2>&1 &
+
+# Pop up teleop
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+
+echo "Enter a name for the map:"
+read map_name
+
+target_dir="$(rospack find uw_knowledge)/maps/$map_name"
+
+# Is there already a map in the target directory?
+while [[ -e "$target_dir/map.yaml" ]]; do
+    prompt="Replace existing map in $PWD? [y/N]:"
+    if [[ -n "$BASH_VERSION" ]]; then
+        read -p "$prompt" -n 1 -r
+        echo
+    elif [[ -n "$ZSH" ]]; then
+        read "REPLY?$prompt"
+    fi
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        break
+    fi
+    echo "Enter a name for the map:"
+    read map_name
+
+    target_dir="$(rospack find uw_knowledge)/maps/$map_name"
+done
+
+# Save it in the local maps directory
+mkdir -p "$target_dir" &> /dev/null
+cd "$target_dir"
+rosrun map_server map_saver && \
+echo "Map saved in $target_dir"
+rosrun map_server crop_map map.yaml &&\
+mv map.yaml map.yaml.uncropped.bak &&\
+mv map.pgm map.pgm.uncropped.bak &&\
+mv cropped.yaml map.yaml &&\
+echo "Cropped map saved"

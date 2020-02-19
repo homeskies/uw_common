@@ -1,0 +1,17 @@
+<package format="2">
+  <name>uw_knowledge</name>
+  <version>0.1.0</version>
+  <description>
+    Maps and knowledgebase data for the Homeskies RoboCup@Home team
+  </description>
+  <license>MIT</license>
+  <maintainer email="robocup@cs.washington.edu">UW RoboCup Contributors</maintainer>
+  <author email="robocup@cs.washington.edu">UW RoboCup Contributors</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>catkin</exec_depend>
+  <exec_depend>rospack</exec_depend>
+
+</package>
