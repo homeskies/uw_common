@@ -25,18 +25,18 @@ camera_info_mapping = {'camera1': camera_info_messages.camera1, 'camera2': camer
 # original:
 # transform_broadcaster_mapping = {'camera1': ((0.5, -0.3, 2.6), (1, 0, 0, 0), rospy.Time(10), 'camera1', 'base_link'),
 #                                 'camera2': ((0.7, -2.0, 0.55), (-0.70711, 0, 0, 0.70711), rospy.Time(10), 'camera2', 'base_link')}
+transform_broadcaster_mapping = {
+        'camera1': ((0.7, 0, 2.3), (1, 0, 0, 0), rospy.Time(10), 'camera1', 'base_link'),
+        'camera2': ((0.7, -2.0, 0.8), (-0.70711, 0, 0, 0.70711), rospy.Time(10), 'camera2', 'base_link'),
+        'camera3': ((1.7, 0, 0.7), (0.5, 0.5, -0.5, -0.5), rospy.Time(10), 'camera3', 'base_link')
+        }
+
+# # with shelf:
 # transform_broadcaster_mapping = {
 #         'camera1': ((0.7, 0, 2.3), (1, 0, 0, 0), rospy.Time(10), 'camera1', 'base_link'),
 #         'camera2': ((0.9, -1.2, 1.1), (-0.70711, 0, 0, 0.70711), rospy.Time(10), 'camera2', 'base_link'),
 #         'camera3': ((1.7, -0.1, 1.1), (0.5, 0.5, -0.5, -0.5), rospy.Time(10), 'camera3', 'base_link')
 #         }
-
-# with shelf:
-transform_broadcaster_mapping = {
-        'camera1': ((0.7, 0, 2.3), (1, 0, 0, 0), rospy.Time(10), 'camera1', 'base_link'),
-        'camera2': ((0.9, -1.2, 1.1), (-0.70711, 0, 0, 0.70711), rospy.Time(10), 'camera2', 'base_link'),
-        'camera3': ((1.7, -0.1, 1.1), (0.5, 0.5, -0.5, -0.5), rospy.Time(10), 'camera3', 'base_link')
-        }
 orientation_mapping = {'camera1': 2, 'camera2': 1, 'camera3': 1}
 orientation_sign_mapping = {'camera1': -1, 'camera2': 1, 'camera3': 1}
 camera_names = ['camera1', 'camera2', 'camera3']
@@ -69,7 +69,6 @@ def publish_camera_transforms(tb, pub):
                 id=id,
                 pose=Pose(Point(transform_data[0][0], transform_data[0][1], transform_data[0][2]), 
                           Quaternion(transform_data[1][0], transform_data[1][1], transform_data[1][2], transform_data[1][3])),
-                scale=Vector3(0.06, 0.06, 0.06),
                 header=Header(frame_id='base_link'),
                 color=ColorRGBA(0.0, 1.0, 0.0, 0.8),
                 text=transform_data[3])
