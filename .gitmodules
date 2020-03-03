@@ -1,0 +1,3 @@
+[submodule "uw_detection/src/yolov3"]
+	path = uw_detection/src/yolov3
+	url = https://github.com/homeskies/yolov3
