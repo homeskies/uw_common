@@ -8,6 +8,7 @@ $(function() {
     const BLUE = "#4c4cff";
     const YELLOW = "#ffd700";
     const DARK_YELLOW = "#998100";
+    const GREEN = "#a7c44c";
     const LABEL_FONT_SIZE = "15px";
 
     const CIRCLE_RADIUS = 3.5;
@@ -16,6 +17,8 @@ $(function() {
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 25;
 
+    var self = this;
+
     var midpointX = 0;
     var midpointY = 0;
 
@@ -23,8 +26,8 @@ $(function() {
     var unusedRegionId = [];
 
     $(document).ready(function() {
-        var self = this;
-
+        // ELEMENTS
+        this.statusBar = document.getElementById("statusBar");
         var title = document.getElementById("title");
 
         var selectedShape = "Point";
@@ -41,10 +44,50 @@ $(function() {
 
         var stage = document.getElementById("stage");
         
-        var editor = new Editor();
-        this.selector = new Selector(stage, editor, LINE_LENGTH, LABEL_PADDING);
+        this.editor = new Editor();
+        this.selector = new Selector(stage, this.editor, LINE_LENGTH, LABEL_PADDING);
+        setEditorButtonStatus(true);
 
-        setEditorButtonStatus();
+        // ROS setup
+        let websocketUrl = (function () {
+            let hostname = window.location.hostname;
+            let protocol = 'ws:';
+            if (window.location.protocol === 'https:') {
+                protocol = 'wss:';
+            }
+            return protocol + '//' + hostname + ':9090';
+        })();
+        this.ros = new ROSLIB.Ros({
+            url: websocketUrl
+        });
+        this.ros.on('error', function (error) {
+            self.statusBar.innerHTML = "Error connecting to ROS websocket server.";
+            self.statusBar.style.color = RED;
+        });
+        this.ros.on('connection', function () {
+            self.statusBar.innerHTML = "Connected to ROS!";
+            self.statusBar.style.color = GREEN;
+        });
+        this.ros.on('close', function (error) {
+            self.statusBar.innerHTML = "No connection to ROS.";
+            self.statusBar.style.color = DARK_YELLOW;
+        });
+        // ROS topic
+        this.pointAnnotationTopic = new ROSLIB.Topic({
+            ros: self.ros,
+            name: "map_annotator/point",
+            messageType: "map_annotator_msgs/PointAnnotation"
+        });
+        this.poseAnnotationTopic = new ROSLIB.Topic({
+            ros: self.ros,
+            name: "map_annotator/pose",
+            messageType: "map_annotator_msgs/PoseAnnotation"
+        });
+        this.regionAnnotationTopic = new ROSLIB.Topic({
+            ros: self.ros,
+            name: "map_annotator/region",
+            messageType: "map_annotator_msgs/RegionAnnotation"
+        });
 
         // LOAD
         var form = document.createElement('form');
@@ -61,11 +104,11 @@ $(function() {
                 reader.addEventListener('load', function (event) {
                     // read SVG file
                     var contents = event.target.result;
-                    editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
-                    setEditorButtonStatus();
+                    self.editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
+                    setEditorButtonStatus(false);
                     // now we know the image size, calculate the mid coordinate
-                    midpointX = editor.getMidpointX();
-                    midpointY = editor.getMidpointY();
+                    midpointX = self.editor.getMidpointX();
+                    midpointY = self.editor.getMidpointY();
                 }, false);
                 reader.readAsText(file);
                 form.reset();
@@ -85,17 +128,23 @@ $(function() {
         document.body.appendChild(link);
 
         save.addEventListener('click', function () {
-            var blob = new Blob([editor.toString()], { type: 'text/plain' } );
-            link.href = URL.createObjectURL(blob);
-            link.download = title.value + '.svg';
-            link.click();
+            var save = confirm("Are you sure you want to SAVE the changes?");
+            if (save == true) {
+                var blob = new Blob([self.editor.toString()], { type: 'text/plain' });
+                link.href = URL.createObjectURL(blob);
+                link.download = title.value + '.svg';
+                link.click();
+            }           
         });
 
         // CLEAR
         clear.addEventListener('click', function () {
-            editor.clear();
-            setEditorButtonStatus();
-            title.value = "Please upload an SVG file";
+            var clear = confirm("Are you sure you want to DISCARD the changes?");
+            if (clear == true) {
+                self.editor.clear();
+                setEditorButtonStatus(true);
+                title.value = "Please upload an SVG file";
+            }
         });
 
         // EDITOR
@@ -109,11 +158,11 @@ $(function() {
         this.addShapeBtn.addEventListener('click', function () {
             // add the selected shape
             if (selectedShape === "Point") {
-                addPoint(editor);
+                addPoint();
             } else if (selectedShape === "Pose") {
-                addPose(editor);
+                addPose();
             } else {
-                addRegion(editor);
+                addRegion();
             }
         });
 
@@ -180,17 +229,17 @@ $(function() {
         });
     });
 
-    function addPoint(editor) {
+    function addPoint() {
         var pointGroup = document.createElementNS(NS, 'g');
         var label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, 'Point');
         pointGroup.appendChild(label);
         var circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
         pointGroup.appendChild(circle);
-        editor.addElement(pointGroup);
+        self.editor.addElement(pointGroup);
+        publishPointAnnotationMsg("save", "Point", midpointX, midpointY);
     }
 
-    function addPose(editor) {
-        // TODO: change this to a popup
+    function addPose() {
         alert("Press \"SHIFT\" and click & drag to change orientation.");
         var poseGroup = document.createElementNS(NS, 'g');
         var label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, 'Pose');
@@ -207,7 +256,7 @@ $(function() {
         arrowmarker.setAttribute('refY', 1.5);
         arrowmarker.setAttribute('orient', "auto");
         arrowmarker.appendChild(arrowhead);
-        editor.addElement(arrowmarker);
+        self.editor.addElement(arrowmarker);
         // arrow body
         var line = document.createElementNS(NS, 'line');
         line.setAttribute('class', 'pose_line_annotation');
@@ -219,10 +268,10 @@ $(function() {
         line.style.stroke = BLUE;
         line.style.strokeWidth = LINE_WIDTH;
         poseGroup.appendChild(line);
-        editor.addElement(poseGroup);
+        self.editor.addElement(poseGroup);
     }
 
-    function addRegion(editor) {
+    function addRegion() {
         var regionId;
         if (unusedRegionId.length > 0) {
             regionId = unusedRegionId.pop();
@@ -230,7 +279,6 @@ $(function() {
             regionCount++;
             regionId = regionCount;
         }
-        // TODO: change this to a popup
         alert("Click \"Add\" button to add regions, click on the region to edit it");
         var regionGroup = document.createElementNS(NS, 'g');
         regionGroup.setAttribute("transform", "translate(0, 0)");
@@ -252,7 +300,39 @@ $(function() {
             var circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
             regionGroup.appendChild(circle);
         }
-        editor.addElement(regionGroup);
+        self.editor.addElement(regionGroup);
+    }
+
+    /////////////////// Helper functions ///////////////////
+    function publishPointAnnotationMsg(command, name, x, y) {
+        let msg = new ROSLIB.Message({
+            command: command,
+            name: name,
+            x: x,
+            y: y
+        });
+        self.pointAnnotationTopic.publish(msg);
+    }
+
+    function publishPoseAnnotationMsg(command, name, x, y, theta) {
+        let msg = new ROSLIB.Message({
+            command: command,
+            name: name,
+            x: x,
+            y: y,
+            theta: theta
+        });
+        self.poseAnnotationTopic.publish(msg);
+    }
+
+    function publishRegionAnnotationMsg(command, name, x, y) {
+        let msg = new ROSLIB.Message({
+            command: command,
+            name: name,
+            x: x,
+            y: y
+        });
+        self.regionAnnotationTopic.publish(msg);
     }
     
     function makeLabel(x, y, color, defaultText) {
@@ -296,10 +376,10 @@ $(function() {
         return [getRandomInteger(minX - 10, maxX - 10), getRandomInteger(minY - 10, maxY - 10)];
     }
 
-    function setEditorButtonStatus() {
+    function setEditorButtonStatus(disabled) {
         var editorBtns = document.getElementsByClassName("editorBtn");
         for (var i = 0; i < editorBtns.length; i++) {
-            editorBtns[i].disabled = !editorBtns[i].disabled;
+            editorBtns[i].disabled = disabled;
         }
     }
 

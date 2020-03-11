@@ -70,6 +70,10 @@ button.disabled {
     color: white;
 }
 
+#title {
+    width: 40%;
+}
+
 input {
     text-align: center;
     font-size: 20px;
@@ -84,15 +88,43 @@ input {
     color: white;
 }
 
-#coordinateInfo {
+#statusBar, #coordinateInfo {
     z-index: 2;
+    position: absolute;
+}
+
+#statusBar {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+#coordinateInfo {
     background-color: #e5e5e5;
     border-radius: 10px;
-    position: absolute;
     margin-top: 10px;
     text-align: left;
 }
 
 #coordinateInfo p {
     margin: 8px;
+}
+
+@media only screen and (max-width: 600px) {
+    body {
+        background-color: #9173e5;
+    }
+
+    #mobileView {
+        display: block !important;
+        text-align: center;
+        margin-top: 2em;
+    }
+
+    #mobileView h2 {
+        color: white;
+    }
+
+    #tools, #content {
+        display: none;
+    }
 }

@@ -4,9 +4,11 @@
     <meta charset="utf-8">
   	<meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    
+    <script src="https://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+    <script src="https://static.robotwebtools.org/ros3djs/current/ros3d.min.js"></script>
 
     <link rel="stylesheet" href="index.css">
-
 
     <script src="utils.js"></script>
     <script src="Editor.js"></script>
@@ -17,8 +19,12 @@
 </head>
 
 <body>
+    <div id="mobileView" style="display:none">
+        <h2>Please view the site from your desktop!</h2>
+    </div>
     <div id="tools">
-        <input id="title" value="Please upload an SVG file" style="width:70%"></input>
+        <div id="statusBar"></div>
+        <input id="title" value="Please upload an SVG file"></input>
         <div id="coordinateInfo"></div>
         <div id="fileBtns">
             <button id="load">Load</button>

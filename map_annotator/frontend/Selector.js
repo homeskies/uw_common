@@ -14,7 +14,7 @@ class Selector {
 
 		var selection = document.createElement('span');
 		selection.style.position = 'absolute';
-		selection.style.display = 'block';
+		selection.style.display = 'none';
 		selection.style.outline = 'solid 2px #99f';
 		selection.style.pointerEvents = 'none';
 		document.body.appendChild(selection);
