@@ -117,6 +117,7 @@ $(function() {
                     let contents = event.target.result;
                     self.editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
                     setEditorButtonStatus(false);
+                    self.changeTracker.reset();
                     // now we know the image size, calculate the mid coordinate
                     midpointX = self.editor.getMidpointX();
                     midpointY = self.editor.getMidpointY();
@@ -155,6 +156,7 @@ $(function() {
                 self.editor.clear();
                 setEditorButtonStatus(true);
                 title.value = "Please upload an SVG file";
+                self.changeTracker.reset();
             }
         });
 
@@ -222,7 +224,7 @@ $(function() {
                 let circle = makeCircle(regionId, prevPoints.length, 'region_endpoint_annotation', newPoint[0], newPoint[1], DARK_YELLOW);
                 selectedRegion.parentElement.appendChild(circle);
                 self.changeTracker.addRegionEndpoint(getLabelElement(selectedRegion).textContent, 
-                        newPoint[0], newPoint[1]);
+                        prevPoints.length, newPoint[0], newPoint[1]);
             } else {
                 showHelpPopup("Please select a region first!");
             }

@@ -222,7 +222,7 @@ class Selector {
 									undefined, undefined, newLabel);
 						} else if (labelType === "pose_line_annotation" && !self.changeTracker.hasPose(newLabel)) {
 							self.changeTracker.applyPoseChange("rename", target.textContent,
-								undefined, undefined, newLabel);
+								undefined, undefined, undefined, newLabel);
 						} else if (labelType === "region_annotation" && !self.changeTracker.hasRegion(newLabel)) {
 							self.changeTracker.applyRegionChange("rename", target.textContent,
 								undefined, undefined, undefined, newLabel);
@@ -258,14 +258,14 @@ class Selector {
 
 	enterRegionEditor(target) {
 		window.document.getElementById("regionShapeBtns").style.visibility = "visible";
-		$(':button:not(.regionShapeBtn)').prop('disabled', true);
+		$(':button:not(.regionShapeBtn, .popupCloseBtn)').prop('disabled', true);
 		// highlight the selected region
 		this.highlightRegion(target);		
 	}
 
 	exitRegionEditor() {
 		window.document.getElementById("regionShapeBtns").style.visibility = "hidden";
-		$(':button:not(.regionShapeBtn)').prop('disabled', false);
+		$(':button:not(.regionShapeBtn, .popupCloseBtn)').prop('disabled', false);
 		// de-highlight the selected region
 		if (this.selectedRegion != null) {
 			this.selectedRegion.style.fill = 'transparent';

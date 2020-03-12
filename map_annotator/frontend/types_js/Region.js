@@ -3,8 +3,8 @@ class Region extends Type {
         super(name);
         this.originalPoints = [];
         this.setOriginalPoints(points);
-        this.translateX = 0;
-        this.translateY = 0;
+        this.translateX = null;
+        this.translateY = null;
     }
 
     getPoints() {
@@ -28,6 +28,10 @@ class Region extends Type {
 
     getOriginalPoints() {
         return this.originalPoints;
+    }
+
+    size() {
+        return this.originalPoints.length;
     }
 
     setOriginalPoints(points) {
@@ -54,12 +58,19 @@ class Region extends Type {
     }
 
     toString() {
-        let pointsStr = "";
-        let translatedPoints = this.getPoints();
-        for (let i = 0; i < translatedPoints.length; i++) {
-            pointsStr += "\n" + i + ": " + translatedPoints[i].getX() + ", " + translatedPoints[i].getY();
+        // let pointsStr = "";
+        // let translatedPoints = this.getPoints();
+        // for (let i = 0; i < translatedPoints.length; i++) {
+        //     pointsStr += "\n" + i + ": " + translatedPoints[i].getX() + ", " + translatedPoints[i].getY();
+        // }
+        let originalPointsStr = "";
+        for (let i = 0; i < this.originalPoints.length; i++) {
+            originalPointsStr += "\n" + i + ": " + this.originalPoints[i].getX() + ", " + this.originalPoints[i].getY();
         }
-        return super.toString() + "\nPoints: " + pointsStr;
+        return super.toString() + 
+                "\nTranslate (X, Y): (" + this.translateX + ", " + this.translateY + ")" + 
+                "\nOriginal Points: " + originalPointsStr;
+                // + "\nTranslated Points: " + pointsStr;
     }
 
     toHtmlString() {
@@ -69,6 +80,14 @@ class Region extends Type {
             pointsStr += "<p>" + i + ": " + 
                     translatedPoints[i].getX() + ", " + translatedPoints[i].getY() + "</p>";
         }
-        return super.toHtmlString() + "<p>Endpoints:</p>" + pointsStr;
+        let originalPointsStr = "";
+        for (let i = 0; i < this.originalPoints.length; i++) {
+            originalPointsStr += "<p>" + i + ": " + 
+                    this.originalPoints[i].getX() + ", " + this.originalPoints[i].getY() + "</p>";
+        }
+        return super.toHtmlString() + 
+                "<p>Translate (X, Y): (" + this.translateX + ", " + this.translateY + ")</p>" +
+                "<p>Original Points:</p>" + originalPointsStr;
+                // + "<p>Translated Points:</p>" + pointsStr;
     }
 }

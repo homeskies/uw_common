@@ -5,6 +5,12 @@ class ChangeTracker {
         this.regionTracker = new Map(); // region name -> Region
     }
 
+    reset() {
+        this.pointTracker.clear();
+        this.poseTracker.clear();
+        this.regionTracker.clear();
+    }
+
     hasPoint(name) {
         return this.hasElement(this.pointTracker, name);
     }
@@ -18,126 +24,143 @@ class ChangeTracker {
     }
 
     applyPointChange(command, name, x=0, y=0, newName="") {
-        // apply the command, return true if the command is valid, false otherwise
-        var pointExist = this.pointTracker.has(name);
+        let pointExist = this.pointTracker.has(name);
         if (command === "save") {
             if (pointExist) {
-                var point = this.pointTracker.get(name);
+                let point = this.pointTracker.get(name);
                 point.setCoordinate(x, y);
                 point.setUndeleted();
             } else {
                 this.pointTracker.set(name, new Point(name, x, y));
             }
-            console.log("SAVE POINT");
-            console.log(this.pointTracker.get(name).toString());
-        } else if (command === "delete" && pointExist) {
-            console.log("DELETE POINT");
-            console.log("before: " + this.pointTracker.get(name).getDeleted());
-            this.pointTracker.get(name).setDeleted();
-            console.log("after: " + this.pointTracker.get(name).getDeleted());
-        } else if (command === "rename" && pointExist && !this.hasPoint(newName)) {
-            var point = this.pointTracker.get(name);
-            var newPoint = new Point(newName, point.getX(), point.getY());
-            this.renameElement(this.pointTracker, newPoint, point.getPrevName(), name, newName);
-            console.log("RENAME POINT");
-            console.log("prev point: " + this.pointTracker.has(name));
-            console.log("new point: \n" + this.pointTracker.get(newName));
-        } else {
-            return false;
+        } else if (command === "delete") {
+            if (pointExist) {
+                this.pointTracker.get(name).setDeleted();
+            } else {
+                let point = new Point(name, null, null);
+                point.setDeleted();
+                this.pointTracker.set(name, point);
+            }
+        } else if (command === "rename") {
+            if (pointExist && !this.hasPoint(newName)) {
+                let point = this.pointTracker.get(name);
+                let newPoint = new Point(newName, point.getX(), point.getY());
+                this.renameElement(this.pointTracker, newPoint, point.getPrevName(), name, newName);
+            } else if (newName != name) {
+                let newPoint = new Point(newName, null, null);
+                newPoint.setPrevName(name);
+                this.pointTracker.set(newName, newPoint);
+            }
         }
-        return true;
     }
 
     applyPoseChange(command, name, x=0, y=0, theta=0, newName="") {
-        // apply the command, return true if the command is valid, false otherwise
-        var poseExist = this.poseTracker.has(name);
+        let poseExist = this.poseTracker.has(name);
         if (command === "save") {
             if (poseExist) {
-                var pose = this.poseTracker.get(name);
+                let pose = this.poseTracker.get(name);
                 pose.setCoordinate(x, y, theta);
                 pose.setUndeleted();
             } else {
                 this.poseTracker.set(name, new Pose(name, x, y, theta));
             }
-            console.log("SAVE POSE");
-            console.log(this.poseTracker.get(name).toString());
-        } else if (command === "delete" && poseExist) {
-            console.log("DELETE POSE");
-            console.log("before: " + this.poseTracker.get(name).getDeleted());
-            this.poseTracker.get(name).setDeleted();
-            console.log("after: " + this.poseTracker.get(name).getDeleted());
-        } else if (command === "rename" && poseExist && !this.hasPose(newName)) {
-            var pose = this.poseTracker.get(name);
-            var newPose = new Pose(newName, pose.getX(), pose.getY(), pose.getTheta());
-            this.renameElement(this.poseTracker, newPose, pose.getPrevName(), name, newName);
-            console.log("RENAME POSE");
-            console.log("prev pose: " + this.poseTracker.has(name));
-            console.log("new pose: \n" + this.poseTracker.get(newName));
-        } else {
-            return false;
+        } else if (command === "delete") {
+            if (poseExist) {
+                this.poseTracker.get(name).setDeleted();
+            } else {
+                let pose = new Pose(name, null, null, null);
+                pose.setDeleted();
+                this.poseTracker.set(name, pose);
+            }
+        } else if (command === "rename") {
+            if (poseExist && !this.hasPose(newName)) {
+                let pose = this.poseTracker.get(name);
+                let newPose = new Pose(newName, pose.getX(), pose.getY(), pose.getTheta());
+                this.renameElement(this.poseTracker, newPose, pose.getPrevName(), name, newName);
+            } else if (newName != name) {
+                let newPose = new Pose(newName, null, null, null);
+                newPose.setPrevName(name);
+                this.poseTracker.set(newName, newPose);
+            }
         }
-        return true;
     }
 
     applyRegionChange(command, name, points=[], translateX=0, translateY=0, newName="") {
-        // apply the command, return true if the command is valid, false otherwise
-        var regionExist = this.regionTracker.has(name);
+        let regionExist = this.regionTracker.has(name);
         if (command === "save") {
             if (regionExist) {
-                var region = this.regionTracker.get(name);
+                let region = this.regionTracker.get(name);
                 region.setOriginalPoints(points);
                 region.setUndeleted();
             } else {
-                var newRegion = new Region(name, points);
+                let newRegion = new Region(name, points);
                 this.regionTracker.set(name, newRegion);
             }
-            console.log("SAVE REGION");
-            console.log(this.regionTracker.get(name).toString());
-        } else if (command === "translate" && regionExist) {
-            this.regionTracker.get(name).setTranslate(translateX, translateY);
-            console.log("TRANSLATE REGION");
-            console.log(this.regionTracker.get(name).toString());
-        } else if (command === "delete" && regionExist) {
-            console.log("DELETE REGION");
-            console.log("before: " + this.regionTracker.get(name).getDeleted());
-            this.regionTracker.get(name).setDeleted();
-            console.log("after: " + this.regionTracker.get(name).getDeleted());
-        } else if (command === "rename" && regionExist && !this.hasRegion(newName)) {
-            var region = this.regionTracker.get(name);
-            var newRegion = new Region(newName, region.getOriginalPoints());
-            this.renameElement(this.regionTracker, newRegion, region.getPrevName(), name, newName);
-            console.log("RENAME REGION");
-            console.log("prev region: " + this.regionTracker.has(name));
-            console.log("new region: \n" + this.regionTracker.get(newName));
-        } else {
-            return false;
+        } else if (command === "translate") {
+            if (regionExist) {
+                this.regionTracker.get(name).setTranslate(translateX, translateY);
+            } else {
+                let newRegion = new Region(name, []);
+                newRegion.setTranslate(translateX, translateY);
+                this.regionTracker.set(name, newRegion);
+            }
+        } else if (command === "delete") {
+            if (regionExist) {
+                this.regionTracker.get(name).setDeleted();
+            } else {
+                let region = new Region(name, []);
+                region.setDeleted();
+                this.regionTracker.set(name, region);
+            }
+        } else if (command === "rename") {
+            if (regionExist && !this.hasRegion(newName)) {
+                let region = this.regionTracker.get(name);
+                let newRegion = new Region(newName, region.getOriginalPoints());
+                this.renameElement(this.regionTracker, newRegion, region.getPrevName(), name, newName);
+            } else if (newName != name) {
+                let newRegion = new Region(newName, []);
+                newRegion.setPrevName(name);
+                this.regionTracker.set(newName, newRegion);
+            }
         }
-        return true;
     }
 
     moveRegionEndpoint(regionName, pointId, newX, newY) {
-        this.regionTracker.get(regionName).setOriginalPoint(pointId, newX, newY);
-        console.log("MOVE REGION ENDPOINT");
-        console.log("new region: \n" + this.regionTracker.get(regionName));
+        if (this.regionTracker.has(regionName)) {
+            let region = this.regionTracker.get(regionName);
+            if (region.size() > pointId) {
+                region.setOriginalPoint(pointId, newX, newY);
+            } else {
+                this.createEndpoints(pointId - region.size(), region, newX, newY);
+            }
+        } else {
+            this.createRegionAndEndpoints(regionName, pointId, newX, newY);
+        }
     }
 
-    addRegionEndpoint(regionName, newX, newY) {
-        this.regionTracker.get(regionName).addOriginalPoint(newX, newY);
-        console.log("ADD REGION ENDPOINT");
-        console.log("new region: \n" + this.regionTracker.get(regionName));
+    addRegionEndpoint(regionName, pointId, newX, newY) {
+        if (this.regionTracker.has(regionName)) {
+            let region = this.regionTracker.get(regionName);
+            this.createEndpoints(pointId - region.size(), region, newX, newY);
+        } else {
+            this.createRegionAndEndpoints(regionName, pointId, newX, newY);
+        }
     }
 
     updateRegionEndpoints(regionName, newPoints) {
-        var region = this.regionTracker.get(regionName);
-        region.clear();
-        region.setOriginalPoints(newPoints);
-        console.log("UPDATE REGION ENDPOINT");
-        console.log("new region: \n" + this.regionTracker.get(regionName));
+        if (this.regionTracker.has(regionName)) {
+            let region = this.regionTracker.get(regionName);
+            region.clear();
+            region.setOriginalPoints(newPoints);
+        } else {
+            let newRegion = new Region(regionName, newPoints);
+            this.regionTracker.set(regionName, newRegion);
+        }
     }
 
     hasElement(tracker, elementName) {
         // return true if the element exists, false otherwise
-        var exist = tracker.has(elementName);
+        let exist = tracker.has(elementName);
         if (exist && tracker.get(elementName).getDeleted()) {
             return false;
         }
@@ -147,8 +170,6 @@ class ChangeTracker {
     renameElement(tracker, element, prevName, currentName, newName) {
         if (prevName != "") {
             element.setPrevName(prevName);
-        } else {
-            element.setPrevName(currentName);
         }
         tracker.delete(currentName);
         tracker.set(newName, element);
@@ -169,5 +190,21 @@ class ChangeTracker {
             str += v.toHtmlString();
         }
         return str;
+    }
+
+    createEndpoints(num, region, newX, newY) {
+        for (let i = 0; i < num; i++) {
+            region.addOriginalPoint(null, null);
+        }
+        region.addOriginalPoint(newX, newY);
+    }
+
+    createRegionAndEndpoints(regionName, pointId, newX, newY) {
+        let newRegion = new Region(regionName, []);
+        for (let i = 0; i < pointId; i++) {
+            newRegion.addOriginalPoint(null, null);
+        }
+        newRegion.addOriginalPoint(newX, newY);
+        this.regionTracker.set(regionName, newRegion);
     }
 }

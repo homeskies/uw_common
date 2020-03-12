@@ -28,11 +28,11 @@ class Type {
 
     toString() {
         return "Name: " + this.name + "\nDeleted: " + this.deleted +
-               "\nPrevName: " + this.prevName;
+               "\nPrevious Name: " + this.prevName;
     }
 
     toHtmlString() {
         return "<p>Name: " + this.name + "</p><p>Deleted: " + this.deleted +
-                "</p><p>PrevName: " + this.prevName + "</p>";
+                "</p><p>Previous Name: " + this.prevName + "</p>";
     }
 }
