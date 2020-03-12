@@ -29,8 +29,10 @@ class Server(object):
         print("POINT")
         if msg.command == "save":
             self.save_point(msg.name, msg.x, msg.y)
-        else:  # delete
-            self.delete_point(msg.x, msg.y)
+        elif msg.command == "delete":
+            self.delete_point(msg.name)
+        else:  # rename
+            self.rename_point(msg.name)
 
     def save_point(self, name, x, y):
         if name != "":
@@ -40,11 +42,10 @@ class Server(object):
         if y != -1:
             print("save y")
     
-    def delete_point(x, y):
-        """
-            Delete the point at (x, y), regardless of the point name 
-            because points might have the same name.
-        """
+    def delete_point(self, name):
+        pass
+
+    def rename_point(self, name):
         pass
 
 

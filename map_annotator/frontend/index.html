@@ -10,7 +10,12 @@
 
     <link rel="stylesheet" href="index.css">
 
+    <script src="types_js/Type.js"></script>
+    <script src="types_js/Point.js"></script>
+    <script src="types_js/Pose.js"></script>
+    <script src="types_js/Region.js"></script>
     <script src="utils.js"></script>
+    <script src="ChangeTracker.js"></script>
     <script src="Editor.js"></script>
     <script src="Selector.js"></script>
     <script src="index.js"></script>
@@ -22,6 +27,15 @@
     <div id="mobileView" style="display:none">
         <h2>Please view the site from your desktop!</h2>
     </div>
+    <div id="helpPopup" class="popup" style="display:none">
+        <button id="helpPopupCloseBtn" class="popupCloseBtn">&#x2716;</button>
+        <p id="helpPopupContent"></p>
+    </div>
+    <div id="trackerPopup" class="popup" style="display:none">
+        <button id="trackerPopupCloseBtn" class="popupCloseBtn">&#x2716;</button>
+        <p id="trackerPopupContent"></p>
+    </div>
+
     <div id="tools">
         <div id="statusBar"></div>
         <input id="title" value="Please upload an SVG file"></input>
@@ -30,6 +44,7 @@
             <button id="load">Load</button>
             <button id="save" class="editorBtn">Save</button>
             <button id="clear" class="editorBtn">Clear</button>
+            <button id="showChanges" class="editorBtn">List Changes</button>
         </div>
         <div id="shapeBtns">
             <div class="dropdown">
@@ -53,6 +68,7 @@
         <svg id="stage" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
 
+    <div id="disableDiv"></div>
 </body>
 
 

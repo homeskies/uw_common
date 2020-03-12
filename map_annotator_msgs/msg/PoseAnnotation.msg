@@ -1,4 +1,4 @@
-string command  # command name: save / delete
+string command  # command name: save / delete / rename
 string name  # name of the pose
 int32 x
 int32 y

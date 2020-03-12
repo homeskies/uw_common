@@ -17,20 +17,20 @@ $(function() {
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 25;
 
-    var self = this;
+    let self = this;
 
-    var midpointX = 0;
-    var midpointY = 0;
+    let midpointX = 0;
+    let midpointY = 0;
 
-    var regionCount = -1;
-    var unusedRegionId = [];
+    let regionCount = -1;
+    let unusedRegionId = [];
 
     $(document).ready(function() {
         // ELEMENTS
         this.statusBar = document.getElementById("statusBar");
-        var title = document.getElementById("title");
+        let title = document.getElementById("title");
 
-        var selectedShape = "Point";
+        let selectedShape = "Point";
         this.shapeTypeBtn = document.getElementById("shapeTypeBtn");
         this.addShapeBtn = document.getElementById("add");
         this.deleteShapeBtn = document.getElementById("delete");
@@ -38,14 +38,25 @@ $(function() {
         this.deleteEndpoint = document.getElementById("deleteEndpoint");
         this.exitRegionEditor = document.getElementById("exitRegionEditor");
 
-        var load = document.getElementById("load");
-        var save = document.getElementById("save");
-        var clear = document.getElementById("clear");
+        let load = document.getElementById("load");
+        let save = document.getElementById("save");
+        let clear = document.getElementById("clear");
+        let showChanges = document.getElementById("showChanges");
 
-        var stage = document.getElementById("stage");
-        
+        let stage = document.getElementById("stage");
+
+        document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
+        document.getElementById("trackerPopupCloseBtn").addEventListener("click", closeTrackerPopup);
+        this.disableDiv = document.getElementById("disableDiv");
+        this.helpPopup = document.getElementById("helpPopup");
+        this.helpPopupContent = document.getElementById("helpPopupContent");
+        this.trackerPopup = document.getElementById("trackerPopup");
+        this.trackerPopupContent = document.getElementById("trackerPopupContent");
+
         this.editor = new Editor();
-        this.selector = new Selector(stage, this.editor, LINE_LENGTH, LABEL_PADDING);
+        this.changeTracker = new ChangeTracker();
+        this.selector = new Selector(stage, this.editor, this.changeTracker, LINE_LENGTH, LABEL_PADDING);
+        
         setEditorButtonStatus(true);
 
         // ROS setup
@@ -90,20 +101,20 @@ $(function() {
         });
 
         // LOAD
-        var form = document.createElement('form');
+        let form = document.createElement('form');
         form.style.display = 'none';
         document.body.appendChild(form);
 
-        var input = document.createElement('input');
+        let input = document.createElement('input');
         input.type = 'file';
         input.addEventListener('change', function (event) {
-            var file = input.files[0];
+            let file = input.files[0];
             if (file.name.split('.')[1] === 'svg') {
                 title.value = file.name.split('.')[0];
-                var reader = new FileReader();
+                let reader = new FileReader();
                 reader.addEventListener('load', function (event) {
                     // read SVG file
-                    var contents = event.target.result;
+                    let contents = event.target.result;
                     self.editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
                     setEditorButtonStatus(false);
                     // now we know the image size, calculate the mid coordinate
@@ -113,7 +124,7 @@ $(function() {
                 reader.readAsText(file);
                 form.reset();
             } else {
-                alert("Please upload an SVG file!");
+                showHelpPopup("Please upload an SVG file!");
             }
         });
         form.appendChild(input);
@@ -123,14 +134,14 @@ $(function() {
         });
 
         // SAVE
-        var link = document.createElement('a');
+        let link = document.createElement('a');
         link.style.display = 'none';
         document.body.appendChild(link);
 
         save.addEventListener('click', function () {
-            var save = confirm("Are you sure you want to SAVE the changes?");
+            let save = confirm("Are you sure you want to SAVE the changes?");
             if (save == true) {
-                var blob = new Blob([self.editor.toString()], { type: 'text/plain' });
+                let blob = new Blob([self.editor.toString()], { type: 'text/plain' });
                 link.href = URL.createObjectURL(blob);
                 link.download = title.value + '.svg';
                 link.click();
@@ -139,12 +150,18 @@ $(function() {
 
         // CLEAR
         clear.addEventListener('click', function () {
-            var clear = confirm("Are you sure you want to DISCARD the changes?");
+            let clear = confirm("Are you sure you want to DISCARD the changes?");
             if (clear == true) {
                 self.editor.clear();
                 setEditorButtonStatus(true);
                 title.value = "Please upload an SVG file";
             }
+        });
+
+        // // SHOW CHANGES
+        showChanges.addEventListener('click', function () {
+            let changes = self.changeTracker.getChanges();
+            showTrackerPopup(changes);
         });
 
         // EDITOR
@@ -174,13 +191,13 @@ $(function() {
                 self.addShapeBtn.disabled = true;
                 self.shapeTypeBtn.disabled = true;
                 if (selectedShape === "Point") {
-                    alert("Click on the point you want to delete.");
+                    showHelpPopup("Click on the point you want to delete.");
                     self.selector.enterShapeDeleteMode("circle_annotation");
                 } else if (selectedShape === "Pose") {
-                    alert("Click on the pose you want to delete.");
+                    showHelpPopup("Click on the pose you want to delete.");
                     self.selector.enterShapeDeleteMode("pose_line_annotation");
                 } else {  // Region
-                    alert("Click on the region you want to delete.");
+                    showHelpPopup("Click on the region you want to delete.");
                     self.selector.enterShapeDeleteMode("region_annotation");
                 }
             } else {
@@ -194,20 +211,26 @@ $(function() {
         });
 
         this.addEndpoint.addEventListener('click', function() {
-            var selectedRegion = self.selector.getSelectedRegion();
-            var stringOfPrevPoints = selectedRegion.getAttribute('points');
-            var prevPoints = convertToList(stringOfPrevPoints);
-            var newPoint = getNewEndpoint(prevPoints);
-            selectedRegion.setAttribute('points', stringOfPrevPoints + " " + newPoint[0] + "," + newPoint[1]);
-            // mark the new end point with a circle
-            var regionId = getRegionId(selectedRegion);
-            var circle = makeCircle(regionId, prevPoints.length, 'region_endpoint_annotation', newPoint[0], newPoint[1], DARK_YELLOW);
-            selectedRegion.parentElement.appendChild(circle);
+            let selectedRegion = self.selector.getSelectedRegion();
+            if (selectedRegion != null) {
+                let stringOfPrevPoints = selectedRegion.getAttribute('points');
+                let prevPoints = convertToList(stringOfPrevPoints);
+                let newPoint = getNewEndpoint(prevPoints);
+                selectedRegion.setAttribute('points', stringOfPrevPoints + " " + newPoint[0] + "," + newPoint[1]);
+                // mark the new end point with a circle
+                let regionId = getRegionId(selectedRegion);
+                let circle = makeCircle(regionId, prevPoints.length, 'region_endpoint_annotation', newPoint[0], newPoint[1], DARK_YELLOW);
+                selectedRegion.parentElement.appendChild(circle);
+                self.changeTracker.addRegionEndpoint(getLabelElement(selectedRegion).textContent, 
+                        newPoint[0], newPoint[1]);
+            } else {
+                showHelpPopup("Please select a region first!");
+            }
         });
 
         this.deleteEndpoint.addEventListener('click', function() {
             if (this.innerHTML === "Delete Endpoint") {
-                alert("Press \"SHIFT\" and click on the endpoint to delete it.");
+                showHelpPopup("Press \"SHIFT\" and click on the endpoint to delete it.");
                 // delete the selected endpoint
                 this.innerHTML = "DONE";
                 this.style.backgroundColor = HIGHLIGHT;
@@ -230,77 +253,100 @@ $(function() {
     });
 
     function addPoint() {
-        var pointGroup = document.createElementNS(NS, 'g');
-        var label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, 'Point');
-        pointGroup.appendChild(label);
-        var circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
-        pointGroup.appendChild(circle);
-        self.editor.addElement(pointGroup);
-        publishPointAnnotationMsg("save", "Point", midpointX, midpointY);
+        let labelName = promptForName("point");
+        if (labelName != "") {
+            if (!self.changeTracker.hasPoint(labelName)) {
+                let pointGroup = document.createElementNS(NS, 'g');
+                let label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, labelName);
+                pointGroup.appendChild(label);
+                let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
+                pointGroup.appendChild(circle);
+                self.editor.addElement(pointGroup);
+                self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
+            } else {
+                showHelpPopup("The point named \"" + labelName + "\" already exists!");
+            }
+        }
     }
 
     function addPose() {
-        alert("Press \"SHIFT\" and click & drag to change orientation.");
-        var poseGroup = document.createElementNS(NS, 'g');
-        var label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, 'Pose');
-        poseGroup.appendChild(label);
-        // arrow head
-        var arrowhead = document.createElementNS(NS, 'polygon');
-        arrowhead.style.fill = BLUE;
-        arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
-        var arrowmarker = document.createElementNS(NS, 'marker');
-        arrowmarker.setAttribute('id', 'arrowhead');
-        arrowmarker.setAttribute('markerWidth', 3);
-        arrowmarker.setAttribute('markerHeight', 3);
-        arrowmarker.setAttribute('refX', 0);
-        arrowmarker.setAttribute('refY', 1.5);
-        arrowmarker.setAttribute('orient', "auto");
-        arrowmarker.appendChild(arrowhead);
-        self.editor.addElement(arrowmarker);
-        // arrow body
-        var line = document.createElementNS(NS, 'line');
-        line.setAttribute('class', 'pose_line_annotation');
-        line.setAttribute('x1', midpointX);
-        line.setAttribute('y1', midpointY);
-        line.setAttribute('x2', midpointX + LINE_LENGTH);
-        line.setAttribute('y2', midpointY);
-        line.setAttribute('marker-end', "url(#arrowhead)");
-        line.style.stroke = BLUE;
-        line.style.strokeWidth = LINE_WIDTH;
-        poseGroup.appendChild(line);
-        self.editor.addElement(poseGroup);
+        let labelName = promptForName("pose");
+        if (labelName != "") {
+            if (!self.changeTracker.hasPose(labelName)) {
+                showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
+                let poseGroup = document.createElementNS(NS, 'g');
+                let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
+                poseGroup.appendChild(label);
+                // arrow head
+                let arrowhead = document.createElementNS(NS, 'polygon');
+                arrowhead.style.fill = BLUE;
+                arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
+                let arrowmarker = document.createElementNS(NS, 'marker');
+                arrowmarker.setAttribute('id', 'arrowhead');
+                arrowmarker.setAttribute('markerWidth', 3);
+                arrowmarker.setAttribute('markerHeight', 3);
+                arrowmarker.setAttribute('refX', 0);
+                arrowmarker.setAttribute('refY', 1.5);
+                arrowmarker.setAttribute('orient', "auto");
+                arrowmarker.appendChild(arrowhead);
+                self.editor.addElement(arrowmarker);
+                // arrow body
+                let line = document.createElementNS(NS, 'line');
+                line.setAttribute('class', 'pose_line_annotation');
+                line.setAttribute('x1', midpointX);
+                line.setAttribute('y1', midpointY);
+                line.setAttribute('x2', midpointX + LINE_LENGTH);
+                line.setAttribute('y2', midpointY);
+                line.setAttribute('marker-end', "url(#arrowhead)");
+                line.style.stroke = BLUE;
+                line.style.strokeWidth = LINE_WIDTH;
+                poseGroup.appendChild(line);
+                self.editor.addElement(poseGroup);
+                self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
+            } else {
+                showHelpPopup("The pose named \"" + labelName + "\" already exists!");
+            }
+        }
     }
 
     function addRegion() {
-        var regionId;
-        if (unusedRegionId.length > 0) {
-            regionId = unusedRegionId.pop();
-        } else {
-            regionCount++;
-            regionId = regionCount;
+        let labelName = promptForName("region");
+        if (labelName != "") {
+            if (!self.changeTracker.hasRegion(labelName)) {
+                showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
+                let regionId;
+                if (unusedRegionId.length > 0) {
+                    regionId = unusedRegionId.pop();
+                } else {
+                    regionCount++;
+                    regionId = regionCount;
+                }
+                let regionGroup = document.createElementNS(NS, 'g');
+                regionGroup.setAttribute("transform", "translate(0, 0)");
+                let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
+                regionGroup.appendChild(label);
+                // add a triangle to start
+                let basicRegion = document.createElementNS(NS, 'polygon');
+                let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY], 
+                            [midpointX, midpointY + INITIAL_REGION_SIZE]];
+                basicRegion.setAttribute('class', 'region_annotation');
+                basicRegion.setAttribute('points', convertToString(points));
+                basicRegion.style.fill = 'transparent';
+                basicRegion.style.stroke = YELLOW;
+                basicRegion.style.strokeWidth = LINE_WIDTH;
+                regionGroup.appendChild(basicRegion);
+                // mark end points with circles
+                for (let i = 0; i < points.length; i++) {
+                    let point = points[i];
+                    let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
+                    regionGroup.appendChild(circle);
+                }
+                self.editor.addElement(regionGroup);
+                self.changeTracker.applyRegionChange("save", labelName, points);
+            } else {
+                showHelpPopup("The region named \"" + labelName + "\" already exists!");
+            }
         }
-        alert("Click \"Add\" button to add regions, click on the region to edit it");
-        var regionGroup = document.createElementNS(NS, 'g');
-        regionGroup.setAttribute("transform", "translate(0, 0)");
-        var label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, 'Region');
-        regionGroup.appendChild(label);
-        // add a triangle to start
-        var basicRegion = document.createElementNS(NS, 'polygon');
-        var points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY], 
-                      [midpointX, midpointY + INITIAL_REGION_SIZE]];
-        basicRegion.setAttribute('class', 'region_annotation');
-        basicRegion.setAttribute('points', convertToString(points));
-        basicRegion.style.fill = 'transparent';
-        basicRegion.style.stroke = YELLOW;
-        basicRegion.style.strokeWidth = LINE_WIDTH;
-        regionGroup.appendChild(basicRegion);
-        // mark end points with circles
-        for (var i = 0; i < points.length; i++) {
-            var point = points[i];
-            var circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
-            regionGroup.appendChild(circle);
-        }
-        self.editor.addElement(regionGroup);
     }
 
     /////////////////// Helper functions ///////////////////
@@ -336,7 +382,7 @@ $(function() {
     }
     
     function makeLabel(x, y, color, defaultText) {
-        var label = document.createElementNS(NS, 'text');
+        let label = document.createElementNS(NS, 'text');
         label.setAttribute('class', 'text_annotation');
         label.setAttribute('x', x);
         label.setAttribute('y', y);
@@ -348,7 +394,7 @@ $(function() {
     }
 
     function makeCircle(regionId, pointId, className, cx, cy, color) {
-        var circle = document.createElementNS(NS, 'circle');
+        let circle = document.createElementNS(NS, 'circle');
         if (regionId >= 0) {  // add an id number to the circle
             circle.setAttribute('id', regionId + "-" + pointId);
         }
@@ -362,12 +408,12 @@ $(function() {
     }
 
     function getNewEndpoint(prevPoints) {
-        var minX = Infinity;
-        var maxX = -Infinity;
-        var minY = Infinity;
-        var maxY = -Infinity;
-        for (var i = 0; i < prevPoints.length; i++) {
-            var point = prevPoints[i];
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+        for (let i = 0; i < prevPoints.length; i++) {
+            let point = prevPoints[i];
             minX = Math.min(minX, point[0]);
             maxX = Math.max(maxX, point[0]);
             minY = Math.min(minY, point[1]);
@@ -377,8 +423,8 @@ $(function() {
     }
 
     function setEditorButtonStatus(disabled) {
-        var editorBtns = document.getElementsByClassName("editorBtn");
-        for (var i = 0; i < editorBtns.length; i++) {
+        let editorBtns = document.getElementsByClassName("editorBtn");
+        for (let i = 0; i < editorBtns.length; i++) {
             editorBtns[i].disabled = disabled;
         }
     }
@@ -387,5 +433,30 @@ $(function() {
         // mark the selection and return the selected item name
         selectedItem.parentElement.parentElement.querySelector(".dropbtn").innerHTML = selectedItem.innerHTML;
         return selectedItem.innerHTML;
+    }
+
+    function showHelpPopup(content) {
+        showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv, content);
+    }
+
+    function showTrackerPopup(content) {
+        // display the pop up window
+        self.trackerPopup.style.display = "block";
+        self.trackerPopupContent.innerHTML = content;
+        // disable everything in the background
+        self.disableDiv.style.display = "block";    }
+
+    function closeHelpPopup() {
+        // close the pop up window
+        self.helpPopup.style.display = "none";
+        // enable everything in the background
+        self.disableDiv.style.display = "none";
+    }
+
+    function closeTrackerPopup() {
+        // close the pop up window
+        self.trackerPopup.style.display = "none";
+        // enable everything in the background
+        self.disableDiv.style.display = "none";
     }
 });

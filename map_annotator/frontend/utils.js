@@ -1,8 +1,8 @@
 function convertToString(points) {
     // convert a list of points to string in the form of: p1X,p1Y p2X,p2Y p3X,p3Y
-    var stringOfPoints = "";
-    for (var i = 0; i < points.length; i++) {
-        var point = points[i];
+    let stringOfPoints = "";
+    for (let i = 0; i < points.length; i++) {
+        let point = points[i];
         stringOfPoints += point[0] + "," + point[1] + " ";
     }
     return stringOfPoints.trim();
@@ -10,10 +10,10 @@ function convertToString(points) {
 
 function convertToList(stringOfPoints) {
     // convert a string of points in the form of: p1X,p1Y p2X,p2Y p3X,p3Y to a list of points
-    var points = [];
-    var stringSplitted = stringOfPoints.trim().split(" ");
-    for (var i = 0; i < stringSplitted.length; i++) {
-        var pointStr = stringSplitted[i].split(",");
+    let points = [];
+    let stringSplitted = stringOfPoints.trim().split(" ");
+    for (let i = 0; i < stringSplitted.length; i++) {
+        let pointStr = stringSplitted[i].split(",");
         points.push([parseInt(pointStr[0]), parseInt(pointStr[1])]);
     }
     return JSON.parse(JSON.stringify(points));
@@ -25,14 +25,14 @@ function getRandomInteger(min, max) {
 
 function getTranslate(translateStr) {
     // return the translate in the form of: [x, y]
-    var translate = translateStr.substring(10, translateStr.length - 1);
-    var translateArr = translate.split(",");
+    let translate = translateStr.substring(10, translateStr.length - 1);
+    let translateArr = translate.split(",");
     return [parseInt(translateArr[0]), parseInt(translateArr[1])];
 }
 
 function getRegionId(selectedRegion) {
     // return the region id of the selected region
-    var referencePointElement = selectedRegion.parentElement.childNodes[2];
+    let referencePointElement = selectedRegion.parentElement.childNodes[2];
 	return parseInt(referencePointElement.getAttribute('id').split("-")[0]);
 }
 
@@ -49,4 +49,25 @@ function convertToDeg(radian) {
 function round(num) {
     // roung the number to 2 decimal places
     return Math.round(num * 100) / 100;
+}
+
+function promptForName(defaultLabelName) {
+    // prompt for the user to enter an element name
+    // return the user input if the input is nonempty, return "" otherwise
+    let labelName = prompt("Please enter the label name:", defaultLabelName);
+    if (labelName == null) {
+        return "";
+    }
+    if (labelName === "") {
+        alert("Please enter a valid name!");
+    }
+    return labelName;
+}
+
+function showPopup(helpPopup, helpPopupContent, disableDiv, content) {
+    // display the pop up window
+    helpPopup.style.display = "block";
+    helpPopupContent.innerHTML = content;
+    // disable everything in the background
+    disableDiv.style.display = "block";
 }
