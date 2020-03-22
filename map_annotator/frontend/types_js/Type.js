@@ -6,6 +6,10 @@ class Type {
         this.prevName = "";
     }
 
+    getName() {
+        return this.name;
+    }
+
     getPrevName() {
         return this.prevName;
     }

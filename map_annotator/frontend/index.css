@@ -155,6 +155,10 @@ input {
     right: 30%;
 }
 
+#rename, #saveAs {
+    background-color: white;
+}
+
 #trackerPopup {
     left: 30%;
     right: 30%;

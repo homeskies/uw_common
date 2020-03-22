@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from map_annotator_msgs.msg import PointAnnotation, PoseAnnotation, RegionAnnotation
+from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region
 import knowledge_representation
 
 def wait_for_time():
@@ -25,29 +25,18 @@ class Server(object):
     def load(self):
         pass
 
-    def process_point(self, msg):
-        print("POINT")
-        if msg.command == "save":
-            self.save_point(msg.name, msg.x, msg.y)
-        elif msg.command == "delete":
-            self.delete_point(msg.name)
-        else:  # rename
-            self.rename_point(msg.name)
-
-    def save_point(self, name, x, y):
-        if name != "":
-            print("save name")
-        if x != -1:
-            print("save x")
-        if y != -1:
-            print("save y")
-    
-    def delete_point(self, name):
-        pass
-
-    def rename_point(self, name):
-        pass
-
+    def process_changes(self, msg):
+        print("Previous Map Name: " + msg.prev_name)
+        print("Current Map Name: " + msg.current_name)
+        print("POINTS: ")
+        for pt in msg.points:
+            print(pt)
+        print("POSES: ")
+        for ps in msg.poses:
+            print(ps)
+        print("REGIONS: ")
+        for r in msg.regions:
+            print(r)
 
 
 def main():
@@ -58,9 +47,7 @@ def main():
     database = Database()
     server = Server(database)
 
-    point_annotation_sub = rospy.Subscriber("map_annotator/point", PointAnnotation, callback=server.process_point)
-    # pose_annotation_sub = rospy.Subscriber("map_annotator/pose", PoseAnnotation, callback=server.process_pose)
-    # region_annotation_sub = rospy.Subscriber("map_annotator/region", RegionAnnotation, callback=server.process_region)
+    annotation_changes_sub = rospy.Subscriber("map_annotator/changes", MapAnnotation, callback=server.process_changes)
     rospy.sleep(1)
 
     def handle_shutdown():

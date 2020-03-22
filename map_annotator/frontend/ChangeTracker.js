@@ -1,8 +1,10 @@
 class ChangeTracker {
-    constructor() {
+    constructor(mapAnnotationTopic) {
         this.pointTracker = new Map();  // point name -> Point
         this.poseTracker = new Map();   // pose name -> Pose
         this.regionTracker = new Map(); // region name -> Region
+        // ROS topics
+        this.mapAnnotationTopic =mapAnnotationTopic;
     }
 
     reset() {
@@ -206,5 +208,52 @@ class ChangeTracker {
         }
         newRegion.addOriginalPoint(newX, newY);
         this.regionTracker.set(regionName, newRegion);
+    }
+
+    publishChanges(prevName, currentName) {
+        let points = [];
+        for (let [k, v] of this.pointTracker) {
+            points.push(this.getPointMsg(v));
+        }
+        let poses = [];
+        for (let [k, v] of this.poseTracker) {
+            poses.push(new ROSLIB.Message({
+                prev_name: v.getPrevName(),
+                current_name: v.getName(),
+                x: v.getX(),
+                y: v.getY(),
+                theta: v.getTheta()
+            }));
+        }
+        let regions = [];
+        for (let [k, v] of this.regionTracker) {
+            let endpoints = v.getPoints();
+            let endpointsMsg = [];
+            for (let ep of endpoints) {
+                endpointsMsg.push(this.getPointMsg(ep));
+            }
+            regions.push(new ROSLIB.Message({
+                prev_name: v.getPrevName(),
+                current_name: v.getName(),
+                endpoints: endpointsMsg
+            }));
+        }
+        let msg = new ROSLIB.Message({
+            prev_name: prevName,
+            current_name: currentName,
+            points: points,
+            poses: poses,
+            regions: regions
+        });
+        this.mapAnnotationTopic.publish(msg);
+    }
+
+    getPointMsg(point) {
+        return new ROSLIB.Message({
+            prev_name: point.getPrevName(),
+            current_name: point.getName(),
+            x: point.getX(),
+            y: point.getY()
+        })
     }
 }

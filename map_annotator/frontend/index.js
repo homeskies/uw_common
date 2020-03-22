@@ -29,6 +29,8 @@ $(function() {
         // ELEMENTS
         this.statusBar = document.getElementById("statusBar");
         let title = document.getElementById("title");
+        this.prevName = "";
+        this.currentName = "";
 
         let selectedShape = "Point";
         this.shapeTypeBtn = document.getElementById("shapeTypeBtn");
@@ -48,16 +50,13 @@ $(function() {
         document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
         document.getElementById("trackerPopupCloseBtn").addEventListener("click", closeTrackerPopup);
         this.disableDiv = document.getElementById("disableDiv");
+        this.savePopup = document.getElementById("savePopup");
+        let rename = document.getElementById("rename");
+        let saveAs = document.getElementById("saveAs");
         this.helpPopup = document.getElementById("helpPopup");
         this.helpPopupContent = document.getElementById("helpPopupContent");
         this.trackerPopup = document.getElementById("trackerPopup");
         this.trackerPopupContent = document.getElementById("trackerPopupContent");
-
-        this.editor = new Editor();
-        this.changeTracker = new ChangeTracker();
-        this.selector = new Selector(stage, this.editor, this.changeTracker, LINE_LENGTH, LABEL_PADDING);
-        
-        setEditorButtonStatus(true);
 
         // ROS setup
         let websocketUrl = (function () {
@@ -84,21 +83,18 @@ $(function() {
             self.statusBar.style.color = DARK_YELLOW;
         });
         // ROS topic
-        this.pointAnnotationTopic = new ROSLIB.Topic({
+        let mapAnnotationTopic = new ROSLIB.Topic({
             ros: self.ros,
-            name: "map_annotator/point",
-            messageType: "map_annotator_msgs/PointAnnotation"
+            name: "map_annotator/changes",
+            messageType: "map_annotator_msgs/MapAnnotation"
         });
-        this.poseAnnotationTopic = new ROSLIB.Topic({
-            ros: self.ros,
-            name: "map_annotator/pose",
-            messageType: "map_annotator_msgs/PoseAnnotation"
-        });
-        this.regionAnnotationTopic = new ROSLIB.Topic({
-            ros: self.ros,
-            name: "map_annotator/region",
-            messageType: "map_annotator_msgs/RegionAnnotation"
-        });
+
+        // Main parts
+        this.editor = new Editor();
+        this.changeTracker = new ChangeTracker(mapAnnotationTopic);
+        this.selector = new Selector(stage, this.editor, this.changeTracker, LINE_LENGTH, LABEL_PADDING);
+        
+        setEditorButtonStatus(true);
 
         // LOAD
         let form = document.createElement('form');
@@ -111,6 +107,7 @@ $(function() {
             let file = input.files[0];
             if (file.name.split('.')[1] === 'svg') {
                 title.value = file.name.split('.')[0];
+                self.prevName = title.value;
                 let reader = new FileReader();
                 reader.addEventListener('load', function (event) {
                     // read SVG file
@@ -144,9 +141,29 @@ $(function() {
             if (save == true) {
                 let blob = new Blob([self.editor.toString()], { type: 'text/plain' });
                 link.href = URL.createObjectURL(blob);
-                link.download = title.value + '.svg';
+                self.currentName = title.value;
+                link.download = self.currentName + '.svg';
                 link.click();
+                // publish all the changes to ROS node to save everything to database
+                if (self.prevName === self.currentName) {
+                    self.changeTracker.publishChanges("", self.currentName);
+                } else {
+                    // ask the user if they want to rename the file or make a copy?
+                    showSavePopup();
+                }
             }           
+        });
+
+        // Rename
+        rename.addEventListener('click', function () {
+            self.changeTracker.publishChanges(self.prevName, self.currentName);
+            closeSavePopup();
+        });
+
+        // Save as
+        saveAs.addEventListener('click', function () {
+            self.changeTracker.publishChanges("", self.currentName);
+            closeSavePopup();
         });
 
         // CLEAR
@@ -156,6 +173,7 @@ $(function() {
                 self.editor.clear();
                 setEditorButtonStatus(true);
                 title.value = "Please upload an SVG file";
+                prevName = "";
                 self.changeTracker.reset();
             }
         });
@@ -352,36 +370,6 @@ $(function() {
     }
 
     /////////////////// Helper functions ///////////////////
-    function publishPointAnnotationMsg(command, name, x, y) {
-        let msg = new ROSLIB.Message({
-            command: command,
-            name: name,
-            x: x,
-            y: y
-        });
-        self.pointAnnotationTopic.publish(msg);
-    }
-
-    function publishPoseAnnotationMsg(command, name, x, y, theta) {
-        let msg = new ROSLIB.Message({
-            command: command,
-            name: name,
-            x: x,
-            y: y,
-            theta: theta
-        });
-        self.poseAnnotationTopic.publish(msg);
-    }
-
-    function publishRegionAnnotationMsg(command, name, x, y) {
-        let msg = new ROSLIB.Message({
-            command: command,
-            name: name,
-            x: x,
-            y: y
-        });
-        self.regionAnnotationTopic.publish(msg);
-    }
     
     function makeLabel(x, y, color, defaultText) {
         let label = document.createElementNS(NS, 'text');
@@ -437,6 +425,12 @@ $(function() {
         return selectedItem.innerHTML;
     }
 
+    function showSavePopup() {
+        self.savePopup.style.display = "block";
+        // disable everything in the background
+        self.disableDiv.style.display = "block";
+    }
+
     function showHelpPopup(content) {
         showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv, content);
     }
@@ -446,7 +440,15 @@ $(function() {
         self.trackerPopup.style.display = "block";
         self.trackerPopupContent.innerHTML = content;
         // disable everything in the background
-        self.disableDiv.style.display = "block";    }
+        self.disableDiv.style.display = "block";
+    }
+
+    function closeSavePopup() {
+        // close the pop up window
+        self.savePopup.style.display = "none";
+        // enable everything in the background
+        self.disableDiv.style.display = "none";
+    }
 
     function closeHelpPopup() {
         // close the pop up window
