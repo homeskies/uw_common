@@ -27,7 +27,7 @@ class Type {
     }
 
     setPrevName(prevName) {
-        this.prevName = (this.name != prevName) ? this.prevName = prevName : "";
+        this.prevName = (this.name != prevName) ? prevName : "";
     }
 
     toString() {

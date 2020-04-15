@@ -83,7 +83,7 @@ input {
     margin: 0.5em;
 }
 
-#fileBtns button:enabled {
+#manageDb, #fileBtns button:enabled {
     background-color: #8c6693;
     color: white;
 }
@@ -100,6 +100,11 @@ input {
 #statusBar {
     margin-right: 10px;
     font-size: 14px;
+}
+
+#manageDb {
+    position: absolute;
+    right: 1em;
 }
 
 #coordinateInfo {
@@ -153,6 +158,19 @@ input {
     border-color: #82c3ef;
     left: 30%;
     right: 30%;
+}
+
+#mapList {
+    text-align: left;
+}
+
+#mapList p {
+    display: inline-block;
+}
+
+#mapList button {
+    position: absolute;
+    right: 0;
 }
 
 #rename, #saveAs {

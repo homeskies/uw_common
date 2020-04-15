@@ -27,6 +27,11 @@
     <div id="mobileView" style="display:none">
         <h2>Please view the site from your desktop!</h2>
     </div>
+    <div id="manageDbPopup" class="popup" style="display:none">
+        <button id="manageDbPopupCloseBtn" class="popupCloseBtn">&#x2716;</button>
+        <h4>Maps in database:</h4>
+        <div id="mapList"></div>
+    </div>
     <div id="savePopup" class="popup" style="display:none">
         <p>You changed the map name, would you like to rename the map or save it as a copy in the database?</p>
         <div>
@@ -46,6 +51,7 @@
     <div id="tools">
         <div id="statusBar"></div>
         <input id="title" value="Please upload an SVG file"></input>
+        <button id="manageDb">Manage Database</button>
         <div id="coordinateInfo"></div>
         <div id="fileBtns">
             <button id="load">Load</button>

@@ -40,16 +40,14 @@ $(function() {
         this.deleteEndpoint = document.getElementById("deleteEndpoint");
         this.exitRegionEditor = document.getElementById("exitRegionEditor");
 
-        let load = document.getElementById("load");
-        let save = document.getElementById("save");
-        let clear = document.getElementById("clear");
-        let showChanges = document.getElementById("showChanges");
-
         let stage = document.getElementById("stage");
 
+        document.getElementById("manageDbPopupCloseBtn").addEventListener("click", closeManageDbPopup);
         document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
         document.getElementById("trackerPopupCloseBtn").addEventListener("click", closeTrackerPopup);
         this.disableDiv = document.getElementById("disableDiv");
+        this.manageDbPopup = document.getElementById("manageDbPopup");
+        this.mapListContainer = document.getElementById("mapList");
         this.savePopup = document.getElementById("savePopup");
         let rename = document.getElementById("rename");
         let saveAs = document.getElementById("saveAs");
@@ -88,6 +86,17 @@ $(function() {
             name: "map_annotator/changes",
             messageType: "map_annotator_msgs/MapAnnotation"
         });
+        // ROS service
+        this.getMapsService = new ROSLIB.Service({
+            ros: self.ros,
+            name: "map_annotator/get_maps",
+            serviceType: "map_annotator_msgs/GetMaps"
+        });
+        this.deleteMapService = new ROSLIB.Service({
+            ros: self.ros,
+            name: "map_annotator/delete_map",
+            serviceType: "map_annotator_msgs/DeleteMap"
+        });
 
         // Main parts
         this.editor = new Editor();
@@ -95,6 +104,9 @@ $(function() {
         this.selector = new Selector(stage, this.editor, this.changeTracker, LINE_LENGTH, LABEL_PADDING);
         
         setEditorButtonStatus(true);
+
+        // MANAGE DATABASE
+        document.getElementById("manageDb").addEventListener('click', showManageDbPopup);
 
         // LOAD
         let form = document.createElement('form');
@@ -127,7 +139,7 @@ $(function() {
         });
         form.appendChild(input);
 
-        load.addEventListener('click', function () {
+        document.getElementById("load").addEventListener('click', function () {
             input.click();
         });
 
@@ -136,7 +148,7 @@ $(function() {
         link.style.display = 'none';
         document.body.appendChild(link);
 
-        save.addEventListener('click', function () {
+        document.getElementById("save").addEventListener('click', function () {
             let save = confirm("Are you sure you want to SAVE the changes?");
             if (save == true) {
                 let blob = new Blob([self.editor.toString()], { type: 'text/plain' });
@@ -151,6 +163,9 @@ $(function() {
                     // ask the user if they want to rename the file or make a copy?
                     showSavePopup();
                 }
+                // reset the change traker
+                self.prevName = self.currentName;
+                self.changeTracker.reset();
             }           
         });
 
@@ -167,7 +182,7 @@ $(function() {
         });
 
         // CLEAR
-        clear.addEventListener('click', function () {
+        document.getElementById("clear").addEventListener('click', function () {
             let clear = confirm("Are you sure you want to DISCARD the changes?");
             if (clear == true) {
                 self.editor.clear();
@@ -178,8 +193,8 @@ $(function() {
             }
         });
 
-        // // SHOW CHANGES
-        showChanges.addEventListener('click', function () {
+        // SHOW CHANGES
+        document.getElementById("showChanges").addEventListener('click', function () {
             let changes = self.changeTracker.getChanges();
             showTrackerPopup(changes);
         });
@@ -425,6 +440,47 @@ $(function() {
         return selectedItem.innerHTML;
     }
 
+    function showManageDbPopup() {
+        self.manageDbPopup.style.display = "block";
+        // disable everything in the background
+        self.disableDiv.style.display = "block";
+        // call the ROS service to fetch names of all the maps
+        let request = new ROSLIB.ServiceRequest({});
+        self.getMapsService.callService(request, function(result) {
+            console.log(result);
+            self.mapListContainer.innerHTML = "";
+            let mapList = result.maps;
+            for (let i = 0; i < mapList.length; i++) {
+                let mapEntryDiv = document.createElement("div");
+                let mapEntry = document.createElement("p");
+                mapEntry.innerText = mapList[i];
+                mapEntryDiv.appendChild(mapEntry);
+                mapEntryDiv.appendChild(createDeleteMapBtn());
+                self.mapListContainer.appendChild(mapEntryDiv);
+            }
+        });
+    }
+
+    function createDeleteMapBtn() {
+        let deleteBtn = document.createElement("button");
+        deleteBtn.innerText = "DELETE";
+        deleteBtn.addEventListener("click", function() {
+            let mapEntryDiv = this.parentElement;
+            let mapEntryName = mapEntryDiv.firstChild.innerText;
+            let deleteConfirm = confirm("Are you sure you want to DELETE the map named " + mapEntryName.toUpperCase() + "?");
+            if (deleteConfirm == true) {
+                // call the ROS service to delete the map
+                let request = new ROSLIB.ServiceRequest({
+                    name: mapEntryName
+                });
+                self.deleteMapService.callService(request, function(result) {
+                    self.mapListContainer.removeChild(mapEntryDiv);
+                });
+            }
+        })
+        return deleteBtn;
+    }
+
     function showSavePopup() {
         self.savePopup.style.display = "block";
         // disable everything in the background
@@ -441,6 +497,13 @@ $(function() {
         self.trackerPopupContent.innerHTML = content;
         // disable everything in the background
         self.disableDiv.style.display = "block";
+    }
+
+    function closeManageDbPopup() {
+        // close the pop up window
+        self.manageDbPopup.style.display = "none";
+        // enable everything in the background
+        self.disableDiv.style.display = "none";
     }
 
     function closeSavePopup() {

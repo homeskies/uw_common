@@ -172,6 +172,8 @@ class ChangeTracker {
     renameElement(tracker, element, prevName, currentName, newName) {
         if (prevName != "") {
             element.setPrevName(prevName);
+        } else {
+            element.setPrevName(currentName);
         }
         tracker.delete(currentName);
         tracker.set(newName, element);
