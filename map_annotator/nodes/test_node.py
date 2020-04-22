@@ -36,7 +36,6 @@ def main():
 
     if not arena.get_pose("pose1"):
         arena.add_pose("pose1", 1.0, 2.0, 3.14)
-        arena.add_pose("pose1", 10.0, 20.0, 3.14)
     if not arena.get_pose("pose2"):
         arena.add_pose("pose2", 2.0, 3.0, 0)
 

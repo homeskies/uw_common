@@ -143,7 +143,10 @@ class Selector {
 					let newTranslateX = newOffsetX - regionReferencePoint.x;
 					let newTranslateY = newOffsetY - regionReferencePoint.y;
 					self.selected.parentElement.setAttribute('transform', 'translate(' + newTranslateX + ',' + newTranslateY + ')');
-					self.changeTracker.applyRegionChange("translate", label.textContent, undefined, newTranslateX, newTranslateY);
+					// always update the list of points and translate
+					let currentRegion = self.selected.parentElement.childNodes[1];
+					let points = convertToList(currentRegion.getAttribute('points'));
+					self.changeTracker.applyRegionChange("translate", label.textContent, points, newTranslateX, newTranslateY);
 				} else if (targetType === 'region_endpoint_annotation') {
 					// move the endpoint
 					self.selected.setAttribute('cx', newOffsetX);
@@ -157,6 +160,9 @@ class Selector {
 					currentRegion.setAttribute('points', convertToString(points));
 					// track change
 					self.changeTracker.moveRegionEndpoint(label.textContent, selectedEndpointId, newOffsetX, newOffsetY);
+					// always update the translate
+					let translate = getTranslate(self.selected.parentElement.getAttribute('transform'));
+					self.changeTracker.applyRegionChange("translate", label.textContent, points, translate[0], translate[1]);
 				}
 				updateSelection(self.selected);
 			}
@@ -211,6 +217,9 @@ class Selector {
 							group.childNodes[i].setAttribute('id', regionId + "-" + newId);
 						}
 						self.changeTracker.updateRegionEndpoints(regionName, points);
+						// always update the translate
+						let translate = getTranslate(group.getAttribute('transform'));
+						self.changeTracker.applyRegionChange("translate", regionName, points, translate[0], translate[1]);
 					}
 				} else if (targetType === 'text_annotation') {
 					let newLabel = promptForName(target.textContent);

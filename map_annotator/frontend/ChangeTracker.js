@@ -100,10 +100,17 @@ class ChangeTracker {
             }
         } else if (command === "translate") {
             if (regionExist) {
-                this.regionTracker.get(name).setTranslate(translateX, translateY);
+                let region = this.regionTracker.get(name);
+                region.setTranslate(translateX, translateY);
+                if (points != null) {
+                    region.setOriginalPoints(points);
+                }
             } else {
                 let newRegion = new Region(name, []);
                 newRegion.setTranslate(translateX, translateY);
+                if (points != null) {
+                    newRegion.setOriginalPoints(points);
+                }
                 this.regionTracker.set(name, newRegion);
             }
         } else if (command === "delete") {
@@ -222,6 +229,7 @@ class ChangeTracker {
             poses.push(new ROSLIB.Message({
                 prev_name: v.getPrevName(),
                 current_name: v.getName(),
+                deleted: v.getDeleted(),
                 x: v.getX(),
                 y: v.getY(),
                 theta: v.getTheta()
@@ -237,6 +245,7 @@ class ChangeTracker {
             regions.push(new ROSLIB.Message({
                 prev_name: v.getPrevName(),
                 current_name: v.getName(),
+                deleted: v.getDeleted(),
                 endpoints: endpointsMsg
             }));
         }
@@ -254,8 +263,9 @@ class ChangeTracker {
         return new ROSLIB.Message({
             prev_name: point.getPrevName(),
             current_name: point.getName(),
+            deleted: point.getDeleted(),
             x: point.getX(),
             y: point.getY()
-        })
+        });
     }
 }

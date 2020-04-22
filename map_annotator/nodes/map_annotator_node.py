@@ -32,8 +32,8 @@ class Server(object):
 
     def delete_map(self, request):
         """ Delete the requested map from database. """
-        print("Map named \"" + request.name + "\" is deleted.")
         self.db.get_map(request.name).delete()
+        print("Map named \"" + request.name + "\" is deleted.")
         return DeleteMapResponse()
 
 
@@ -63,7 +63,12 @@ class Server(object):
 
         for pt in point_changes:
             prev_pt = target_map.get_point(pt.prev_name)
-            if prev_pt:
+            curr_pt = target_map.get_point(pt.current_name)
+            if pt.deleted and prev_pt:
+                prev_pt.delete()
+            elif pt.deleted and curr_pt:
+                curr_pt.delete()
+            elif prev_pt:
                 point_x = pt.x if pt.x != None else prev_pt.x
                 point_y = pt.y if pt.y != None else prev_pt.y
                 # add a new point
@@ -71,7 +76,6 @@ class Server(object):
                 # delete the existing point
                 prev_pt.delete()
             else:
-                curr_pt = target_map.get_point(pt.current_name)
                 if curr_pt:
                     curr_pt.delete()
                 target_map.add_point(pt.current_name, pt.x, pt.y)
@@ -86,7 +90,12 @@ class Server(object):
 
         for ps in pose_changes:
             prev_ps = target_map.get_pose(ps.prev_name)
-            if prev_ps:
+            curr_ps = target_map.get_pose(ps.current_name)
+            if ps.deleted and prev_ps:
+                prev_ps.delete()
+            elif ps.deleted and curr_ps:
+                curr_ps.delete()
+            elif prev_ps:
                 pose_x = ps.x if ps.x != None else prev_ps.x
                 pose_y = ps.y if ps.y != None else prev_ps.y
                 pose_theta = ps.theta if ps.theta != None else prev_ps.theta
@@ -95,7 +104,6 @@ class Server(object):
                 # delete the existing pose
                 prev_ps.delete()
             else:
-                curr_ps = target_map.get_pose(ps.current_name)
                 if curr_ps:
                     curr_ps.delete()
                 target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)
@@ -110,24 +118,56 @@ class Server(object):
 
         for r in region_changes:
             prev_r = target_map.get_region(r.prev_name)
-            if prev_r:
-                pass
-                # region_endpoints = ps.x if ps.x != None else prev_ps.x
-                # pose_y = ps.y if ps.y != None else prev_ps.y
-                # pose_theta = ps.theta if ps.theta != None else prev_ps.theta
-                # # add a new pose
-                # target_map.add_pose(ps.current_name, pose_x, pose_y, pose_theta)
-                # # delete the existing pose
-                # prev_ps.delete()
+            curr_r = target_map.get_region(r.current_name)
+            if r.deleted and prev_r:
+                prev_r.delete()
+            elif r.deleted and curr_r:
+                curr_r.delete()
             else:
-                pass
-                # curr_ps = target_map.get_pose(ps.current_name)
-                # if curr_ps:
-                #     curr_ps.delete()
-                # target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)        
+                updated_endpoints = []
+                if prev_r:
+                    if r.endpoints != None:
+                        updated_endpoints = self.update_region_endpoints(prev_r.points, r.endpoints)
+                    else:
+                        updated_endpoints = prev_r.points
+                    # add a new region
+                    target_map.add_region(r.current_name, updated_endpoints)
+                    # delete the existing region
+                    prev_r.delete()
+                else:
+                    curr_r = target_map.get_region(r.current_name)
+                    old_endpoints = curr_r.points if curr_r else []
+                    updated_endpoints = self.update_region_endpoints(old_endpoints, r.endpoints)
+                    if curr_r:
+                        curr_r.delete()
+                    target_map.add_region(r.current_name, updated_endpoints)        
         
         print("AFTER: ")
         self._print_all_regions(target_map)
+
+    
+    def update_region_endpoints(self, old_endpoints, new_endpoints):
+        """ 
+            Combine the old list of endpoints with the list of new endpoints, 
+            and return a list of tuple as the updated list.
+        """
+        # old_endpoints (list of tuple): [p, p, p, p]
+        # new_endpoints (list of Point): [_, _, p]   [_, _, p, p, p]   [p, p, p]
+        old_size = len(old_endpoints)
+        new_size = len(new_endpoints)
+        size = max(old_size, new_size)
+        updated_endpoints = []
+        is_brand_new = True
+        for i in range(size):
+            if i < new_size and new_endpoints[i] != None:
+                updated_endpoints.append((new_endpoints[i].x, new_endpoints[i].y))
+            elif i >= new_size and is_brand_new:
+                break
+            else: 
+                is_brand_new = False
+                updated_endpoints.append(old_endpoints[i])
+
+        return updated_endpoints
 
     
     def _print_all_points(self, target_map):

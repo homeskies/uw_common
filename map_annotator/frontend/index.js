@@ -255,9 +255,13 @@ $(function() {
                 // mark the new end point with a circle
                 let regionId = getRegionId(selectedRegion);
                 let circle = makeCircle(regionId, prevPoints.length, 'region_endpoint_annotation', newPoint[0], newPoint[1], DARK_YELLOW);
+                let regionName = getLabelElement(selectedRegion).textContent;
                 selectedRegion.parentElement.appendChild(circle);
-                self.changeTracker.addRegionEndpoint(getLabelElement(selectedRegion).textContent, 
-                        prevPoints.length, newPoint[0], newPoint[1]);
+                self.changeTracker.addRegionEndpoint(regionName, prevPoints.length, newPoint[0], newPoint[1]);
+                // always update the list of points and translate
+                let points = convertToList(selectedRegion.getAttribute('points'));
+                let translate = getTranslate(selectedRegion.parentElement.getAttribute('transform'));
+                self.changeTracker.applyRegionChange("translate", regionName, points, translate[0], translate[1]);
             } else {
                 showHelpPopup("Please select a region first!");
             }
