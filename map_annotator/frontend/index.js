@@ -97,11 +97,28 @@ $(function() {
             name: "map_annotator/delete_map",
             serviceType: "map_annotator_msgs/DeleteMap"
         });
+        this.hasPointService = new ROSLIB.Service({
+            ros: self.ros,
+            name: "map_annotator/has_point",
+            serviceType: "map_annotator_msgs/HasPoint"
+        });
+        this.hasPoseService = new ROSLIB.Service({
+            ros: self.ros,
+            name: "map_annotator/has_pose",
+            serviceType: "map_annotator_msgs/HasPose"
+        });
+        this.hasRegionService = new ROSLIB.Service({
+            ros: self.ros,
+            name: "map_annotator/has_region",
+            serviceType: "map_annotator_msgs/HasRegion"
+        });
 
         // Main parts
         this.editor = new Editor();
         this.changeTracker = new ChangeTracker(mapAnnotationTopic);
-        this.selector = new Selector(stage, this.editor, this.changeTracker, LINE_LENGTH, LABEL_PADDING);
+        this.selector = new Selector(stage, this.editor, this.changeTracker, 
+                this.hasPointService, this.hasPoseService, this.hasRegionService,
+                LINE_LENGTH, LABEL_PADDING);
         
         setEditorButtonStatus(true);
 
@@ -126,6 +143,7 @@ $(function() {
                     let contents = event.target.result;
                     self.editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
                     setEditorButtonStatus(false);
+                    self.changeTracker.setMapName(title.value);
                     self.changeTracker.reset();
                     // now we know the image size, calculate the mid coordinate
                     midpointX = self.editor.getMidpointX();
@@ -295,13 +313,24 @@ $(function() {
         let labelName = promptForName("point");
         if (labelName != "") {
             if (!self.changeTracker.hasPoint(labelName)) {
-                let pointGroup = document.createElementNS(NS, 'g');
-                let label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, labelName);
-                pointGroup.appendChild(label);
-                let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
-                pointGroup.appendChild(circle);
-                self.editor.addElement(pointGroup);
-                self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
+                // check if the point already exists in the database
+                let request = new ROSLIB.ServiceRequest({
+                    map_name: self.prevName,
+                    point_name: labelName
+                });
+                self.hasPointService.callService(request, function (result) {
+                    if (!result.result) {
+                        let pointGroup = document.createElementNS(NS, 'g');
+                        let label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, labelName);
+                        pointGroup.appendChild(label);
+                        let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
+                        pointGroup.appendChild(circle);
+                        self.editor.addElement(pointGroup);
+                        self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
+                    } else {
+                        showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                    }
+                });
             } else {
                 showHelpPopup("The point named \"" + labelName + "\" already exists!");
             }
@@ -312,36 +341,47 @@ $(function() {
         let labelName = promptForName("pose");
         if (labelName != "") {
             if (!self.changeTracker.hasPose(labelName)) {
-                showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
-                let poseGroup = document.createElementNS(NS, 'g');
-                let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
-                poseGroup.appendChild(label);
-                // arrow head
-                let arrowhead = document.createElementNS(NS, 'polygon');
-                arrowhead.style.fill = BLUE;
-                arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
-                let arrowmarker = document.createElementNS(NS, 'marker');
-                arrowmarker.setAttribute('id', 'arrowhead');
-                arrowmarker.setAttribute('markerWidth', 3);
-                arrowmarker.setAttribute('markerHeight', 3);
-                arrowmarker.setAttribute('refX', 0);
-                arrowmarker.setAttribute('refY', 1.5);
-                arrowmarker.setAttribute('orient', "auto");
-                arrowmarker.appendChild(arrowhead);
-                self.editor.addElement(arrowmarker);
-                // arrow body
-                let line = document.createElementNS(NS, 'line');
-                line.setAttribute('class', 'pose_line_annotation');
-                line.setAttribute('x1', midpointX);
-                line.setAttribute('y1', midpointY);
-                line.setAttribute('x2', midpointX + LINE_LENGTH);
-                line.setAttribute('y2', midpointY);
-                line.setAttribute('marker-end', "url(#arrowhead)");
-                line.style.stroke = BLUE;
-                line.style.strokeWidth = LINE_WIDTH;
-                poseGroup.appendChild(line);
-                self.editor.addElement(poseGroup);
-                self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
+                // check if the pose already exists in the database
+                let request = new ROSLIB.ServiceRequest({
+                    map_name: self.prevName,
+                    pose_name: labelName
+                });
+                self.hasPoseService.callService(request, function (result) {
+                    if (!result.result) {
+                        showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
+                        let poseGroup = document.createElementNS(NS, 'g');
+                        let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
+                        poseGroup.appendChild(label);
+                        // arrow head
+                        let arrowhead = document.createElementNS(NS, 'polygon');
+                        arrowhead.style.fill = BLUE;
+                        arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
+                        let arrowmarker = document.createElementNS(NS, 'marker');
+                        arrowmarker.setAttribute('id', 'arrowhead');
+                        arrowmarker.setAttribute('markerWidth', 3);
+                        arrowmarker.setAttribute('markerHeight', 3);
+                        arrowmarker.setAttribute('refX', 0);
+                        arrowmarker.setAttribute('refY', 1.5);
+                        arrowmarker.setAttribute('orient', "auto");
+                        arrowmarker.appendChild(arrowhead);
+                        self.editor.addElement(arrowmarker);
+                        // arrow body
+                        let line = document.createElementNS(NS, 'line');
+                        line.setAttribute('class', 'pose_line_annotation');
+                        line.setAttribute('x1', midpointX);
+                        line.setAttribute('y1', midpointY);
+                        line.setAttribute('x2', midpointX + LINE_LENGTH);
+                        line.setAttribute('y2', midpointY);
+                        line.setAttribute('marker-end', "url(#arrowhead)");
+                        line.style.stroke = BLUE;
+                        line.style.strokeWidth = LINE_WIDTH;
+                        poseGroup.appendChild(line);
+                        self.editor.addElement(poseGroup);
+                        self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
+                    } else {
+                        showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                    }
+                });
             } else {
                 showHelpPopup("The pose named \"" + labelName + "\" already exists!");
             }
@@ -352,36 +392,47 @@ $(function() {
         let labelName = promptForName("region");
         if (labelName != "") {
             if (!self.changeTracker.hasRegion(labelName)) {
-                showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
-                let regionId;
-                if (unusedRegionId.length > 0) {
-                    regionId = unusedRegionId.pop();
-                } else {
-                    regionCount++;
-                    regionId = regionCount;
-                }
-                let regionGroup = document.createElementNS(NS, 'g');
-                regionGroup.setAttribute("transform", "translate(0, 0)");
-                let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
-                regionGroup.appendChild(label);
-                // add a triangle to start
-                let basicRegion = document.createElementNS(NS, 'polygon');
-                let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY], 
-                            [midpointX, midpointY + INITIAL_REGION_SIZE]];
-                basicRegion.setAttribute('class', 'region_annotation');
-                basicRegion.setAttribute('points', convertToString(points));
-                basicRegion.style.fill = 'transparent';
-                basicRegion.style.stroke = YELLOW;
-                basicRegion.style.strokeWidth = LINE_WIDTH;
-                regionGroup.appendChild(basicRegion);
-                // mark end points with circles
-                for (let i = 0; i < points.length; i++) {
-                    let point = points[i];
-                    let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
-                    regionGroup.appendChild(circle);
-                }
-                self.editor.addElement(regionGroup);
-                self.changeTracker.applyRegionChange("save", labelName, points);
+                // check if the region already exists in the database
+                let request = new ROSLIB.ServiceRequest({
+                    map_name: self.prevName,
+                    region_name: labelName
+                });
+                self.hasRegionService.callService(request, function (result) {
+                    if (!result.result) {
+                        showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
+                        let regionId;
+                        if (unusedRegionId.length > 0) {
+                            regionId = unusedRegionId.pop();
+                        } else {
+                            regionCount++;
+                            regionId = regionCount;
+                        }
+                        let regionGroup = document.createElementNS(NS, 'g');
+                        regionGroup.setAttribute("transform", "translate(0, 0)");
+                        let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
+                        regionGroup.appendChild(label);
+                        // add a triangle to start
+                        let basicRegion = document.createElementNS(NS, 'polygon');
+                        let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY], 
+                                    [midpointX, midpointY + INITIAL_REGION_SIZE]];
+                        basicRegion.setAttribute('class', 'region_annotation');
+                        basicRegion.setAttribute('points', convertToString(points));
+                        basicRegion.style.fill = 'transparent';
+                        basicRegion.style.stroke = YELLOW;
+                        basicRegion.style.strokeWidth = LINE_WIDTH;
+                        regionGroup.appendChild(basicRegion);
+                        // mark end points with circles
+                        for (let i = 0; i < points.length; i++) {
+                            let point = points[i];
+                            let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
+                            regionGroup.appendChild(circle);
+                        }
+                        self.editor.addElement(regionGroup);
+                        self.changeTracker.applyRegionChange("save", labelName, points);
+                    } else {
+                        showHelpPopup("The region named \"" + labelName + "\" already exists!");
+                    }
+                });
             } else {
                 showHelpPopup("The region named \"" + labelName + "\" already exists!");
             }

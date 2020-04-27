@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse
+from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse, HasPoint, HasPointResponse, HasPose, HasPoseResponse, HasRegion, HasRegionResponse
 from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region
 import knowledge_representation
 
@@ -18,6 +18,9 @@ class Server(object):
         self.db = knowledge_representation.get_default_ltmc()
         self.get_maps_srv = rospy.Service("map_annotator/get_maps", GetMaps, self.get_all_maps)
         self.delete_map_srv = rospy.Service("map_annotator/delete_map", DeleteMap, self.delete_map)
+        self.has_point_srv = rospy.Service("map_annotator/has_point", HasPoint, self.has_point)
+        self.has_pose_srv = rospy.Service("map_annotator/has_pose", HasPose, self.has_pose)
+        self.has_region_srv = rospy.Service("map_annotator/has_region", HasRegion, self.has_region)
 
 
     def get_all_maps(self, request):
@@ -35,6 +38,30 @@ class Server(object):
         self.db.get_map(request.name).delete()
         print("Map named \"" + request.name + "\" is deleted.")
         return DeleteMapResponse()
+
+
+    def has_point(self, request):
+        """ Check if the given map has the given point. """
+        result = self.db.get_map(request.map_name).get_point(request.point_name)
+        if result:
+            return HasPointResponse(True)
+        return HasPointResponse(False)
+
+    
+    def has_pose(self, request):
+        """ Check if the given map has the given pose. """
+        result = self.db.get_map(request.map_name).get_pose(request.pose_name)
+        if result:
+            return HasPoseResponse(True)
+        return HasPoseResponse(False)
+
+
+    def has_region(self, request):
+        """ Check if the given map has the given region. """
+        result = self.db.get_map(request.map_name).get_region(request.region_name)
+        if result:
+            return HasRegionResponse(True)
+        return HasRegionResponse(False)
 
 
     def process_changes(self, msg):

@@ -1,10 +1,19 @@
 class ChangeTracker {
     constructor(mapAnnotationTopic) {
+        this.mapName = "";
         this.pointTracker = new Map();  // point name -> Point
         this.poseTracker = new Map();   // pose name -> Pose
         this.regionTracker = new Map(); // region name -> Region
         // ROS topics
         this.mapAnnotationTopic =mapAnnotationTopic;
+    }
+
+    setMapName(mapName) {
+        this.mapName = mapName;
+    }
+
+    getMapName() {
+        return this.mapName;
     }
 
     reset() {
@@ -232,7 +241,7 @@ class ChangeTracker {
                 deleted: v.getDeleted(),
                 x: v.getX(),
                 y: v.getY(),
-                theta: v.getTheta()
+                theta: -v.getTheta()
             }));
         }
         let regions = [];

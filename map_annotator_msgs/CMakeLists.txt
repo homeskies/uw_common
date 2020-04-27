@@ -23,6 +23,9 @@ add_service_files (
   FILES
   DeleteMap.srv
   GetMaps.srv
+  HasPoint.srv
+  HasPose.srv
+  HasRegion.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

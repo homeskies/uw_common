@@ -1,5 +1,5 @@
 class Selector {
-	constructor(stage, editor, changeTracker, lineLength, labelPadding) {
+	constructor(stage, editor, changeTracker, hasPointService, hasPoseService, hasRegionService, lineLength, labelPadding) {
 		this.REGION_HIGHLIGHT = "#ffe34c";
 
 		let self = this;
@@ -10,6 +10,9 @@ class Selector {
 		this.typeToDelete = "";
 		this.editor = editor;
 		this.changeTracker = changeTracker;
+		this.hasPointService = hasPointService;
+		this.hasPoseService = hasPoseService;
+		this.hasRegionService = hasRegionService;
 
 		this.disableDiv = document.getElementById("disableDiv");
 		this.helpPopup = document.getElementById("helpPopup");
@@ -50,8 +53,8 @@ class Selector {
 		function displayPoseInfo(x, y, theta) {
 			document.getElementById("coordinateInfo").innerHTML = 
 					"<p>X: " + x + "</p><p>Y: " + y + 
-					"<p>THETA: " + round(theta) + " rad</p>" +
-					"<p>THETA: " + round(convertToDeg(theta)) + " deg</p>";
+					"<p>THETA: " + round(-theta) + " rad</p>" +
+					"<p>THETA: " + round(convertToDeg(-theta)) + " deg</p>";
 		}
 
 		function clearCoordinateInfo() {
@@ -225,23 +228,57 @@ class Selector {
 					let newLabel = promptForName(target.textContent);
 					if (newLabel != "") {
 						let labelType = target.parentElement.childNodes[1].getAttribute('class');
-						let validRename = true;
 						if (labelType === "circle_annotation" && !self.changeTracker.hasPoint(newLabel)) {
-							self.changeTracker.applyPointChange("rename", target.textContent, 
-									undefined, undefined, newLabel);
+							// check if the point already exists in the database
+							let request = new ROSLIB.ServiceRequest({
+								map_name: self.changeTracker.getMapName(),
+								point_name: newLabel
+							});
+							self.hasPointService.callService(request, function (result) {
+								if (!result.result) {
+									self.changeTracker.applyPointChange("rename", target.textContent, 
+											undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								} else {
+									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+										"The name \"" + newLabel + "\" already exists!");
+								}
+							});
 						} else if (labelType === "pose_line_annotation" && !self.changeTracker.hasPose(newLabel)) {
-							self.changeTracker.applyPoseChange("rename", target.textContent,
-								undefined, undefined, undefined, newLabel);
+							// check if the pose already exists in the database
+							let request = new ROSLIB.ServiceRequest({
+								map_name: self.changeTracker.getMapName(),
+								pose_name: newLabel
+							});
+							self.hasPoseService.callService(request, function (result) {
+								if (!result.result) {
+									self.changeTracker.applyPoseChange("rename", target.textContent,
+										undefined, undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								} else {
+									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+										"The name \"" + newLabel + "\" already exists!");
+								}
+							});
 						} else if (labelType === "region_annotation" && !self.changeTracker.hasRegion(newLabel)) {
-							self.changeTracker.applyRegionChange("rename", target.textContent,
-								undefined, undefined, undefined, newLabel);
+							// check if the region already exists in the database
+							let request = new ROSLIB.ServiceRequest({
+								map_name: self.changeTracker.getMapName(),
+								region_name: newLabel
+							});
+							self.hasRegionService.callService(request, function (result) {
+								if (!result.result) {
+									self.changeTracker.applyRegionChange("rename", target.textContent,
+										undefined, undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								} else {
+									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+										"The name \"" + newLabel + "\" already exists!");
+								}
+							});		
 						} else {
-							validRename = false;
-							showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv, 
-									"The name \"" + newLabel + "\" already exists!");
-						}
-						if (validRename) {
-							target.textContent = newLabel;
+							showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+								"The name \"" + newLabel + "\" already exists!");
 						}
 					}
 				}

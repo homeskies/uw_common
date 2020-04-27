@@ -2,6 +2,10 @@
 
 import rospy
 import knowledge_representation
+from std_msgs.msg import Header, ColorRGBA
+from geometry_msgs.msg import Pose, PoseStamped, Quaternion, Point, Vector3
+from visualization_msgs.msg import Marker
+from tf.transformations import quaternion_from_euler
 
 
 def wait_for_time():
@@ -12,10 +16,7 @@ def wait_for_time():
         pass
 
 
-def main():
-    rospy.init_node('test_node')
-    wait_for_time()
-    
+def database_demo():
     ltmc = knowledge_representation.get_default_ltmc()
     ltmc.delete_all_attributes()
     ltmc.delete_all_entities()
@@ -70,6 +71,68 @@ def main():
     # clear up
     ltmc.delete_all_attributes()
     ltmc.delete_all_entities()
+
+
+
+def main():
+    rospy.init_node('test_node')
+    wait_for_time()
+
+    # pixel coordinate to map cpprdinate conversion 
+    viz_pub = rospy.Publisher('visualization_marker', Marker, queue_size=5)
+    rospy.sleep(0.5)
+    
+    # homeskies_arena
+    # pixel_width = 88
+    # pixel_height = 113
+    # resolution = 0.05
+    
+    # map_origin_x = -2.119012
+    # map_origin_y = -3.196796
+
+    # pixel_x = 44
+    # pixel_y = 56.5
+    # yaw = 0
+
+    # uw_gazebo map
+    pixel_width = 1216
+    pixel_height = 768
+    resolution = 0.025
+    
+    map_origin_x = -10
+    map_origin_y = -10
+
+    pixel_x = 640
+    pixel_y = 426
+    yaw = -1.2 # radians
+
+    map_height = pixel_height * resolution # 2 * abs(map_origin_y)
+    map_width = pixel_width * resolution # (pixel_width * map_height) / pixel_height
+
+    map_origin_y = (pixel_height - abs(map_origin_y) / resolution) * resolution
+
+    # map_x = (pixel_x * map_width) / pixel_width - abs(map_origin_x)
+    # map_y = -((pixel_y * map_height) / pixel_height - abs(map_origin_y))
+
+    map_x = pixel_x * resolution - abs(map_origin_x)
+    map_y = - (pixel_y * resolution - abs(map_origin_y))
+    map_quaternion = quaternion_from_euler(0, 0, yaw)
+
+    ps = PoseStamped()
+    ps.header.frame_id = "map"
+    ps.header.stamp = rospy.Time.now()
+    ps.pose.position = Point(map_x, map_y, 0)
+    ps.pose.orientation = Quaternion(map_quaternion[0], map_quaternion[1], map_quaternion[2], map_quaternion[3])
+    marker = Marker(type=Marker.ARROW,
+                    id=2,
+                    pose=ps.pose,
+                    scale=Vector3(0.5, 0.1, 0.1),
+                    header=ps.header,
+                    color=ColorRGBA(1.0, 0.75, 0.3, 1.0))
+    viz_pub.publish(marker)
+    
+
+    rospy.spin()
 
 
 if __name__ == '__main__':
