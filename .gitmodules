@@ -1,0 +1,6 @@
+[submodule "uw_language_understanding/uw_language_understanding/src/gpsr-command-understanding"]
+	path = uw_language_understanding/uw_language_understanding/src/gpsr-command-understanding
+	url = git@github.com:nickswalker/gpsr-command-understanding.git
+[submodule "uw_language_understanding/src/gpsr-command-understanding"]
+	path = uw_language_understanding/src/gpsr-command-understanding
+	url = git@github.com:nickswalker/gpsr-command-understanding.git

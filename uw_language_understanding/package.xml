@@ -1,0 +1,20 @@
+<package format="2">
+    <name>uw_language_understanding</name>
+    <version>0.1.0</version>
+    <description>
+        Command understanding for RoboCup@Home GPSR commands
+    </description>
+    <license>MIT</license>
+    <maintainer email="robocup@cs.washington.edu">UW RoboCup Contributors</maintainer>
+    <author email="robocup@cs.washington.edu">UW RoboCup Contributors</author>
+
+
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>catkin_virtualenv</build_depend>
+    <exec_depend>catkin</exec_depend>
+    <exec_depend>rospack</exec_depend>
+
+    <export>
+        <pip_requirements>src/gpsr-command-understanding/requirements.txt</pip_requirements>
+    </export>
+</package>

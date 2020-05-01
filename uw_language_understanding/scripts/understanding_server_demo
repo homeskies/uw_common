@@ -1,0 +1,47 @@
+#!python3
+"""
+A simple example that uses the grammar-based parser to parse commands sent over a rostopic.
+You should avoid using the parsers over ROS like this, because you should be able to import
+them directly into your code. This may be the best way to access the parsers from Python2
+though.
+"""
+import rospy
+
+from gpsr_command_understanding.anonymizer import NumberingAnonymizer
+from gpsr_command_understanding.generator.generator import Generator
+from gpsr_command_understanding.generator.loading_helpers import load_paired, GRAMMAR_DIR_2019
+from gpsr_command_understanding.parser import GrammarBasedParser, AnonymizingParser
+
+
+from std_msgs.msg import String
+
+
+class ParserListener:
+    def __init__(self, parser):
+        self.parser = parser
+        rospy.Subscriber("commands", String, self.callback)
+        print("Listening for commands on /commands")
+
+    def callback(self, data):
+        rospy.loginfo(str(rospy.get_caller_id()) + "I heard %s", str(data.data))
+        parsed = self.parser(data.data, verbose=True)
+        if parsed:
+            print(parsed.pretty())
+
+
+def main():
+    rospy.init_node('listener', anonymous=True)
+    generator = Generator(None)
+    load_paired(generator, "gpsr", GRAMMAR_DIR_2019)
+
+    parser = GrammarBasedParser(generator.rules)
+    anonymizer = NumberingAnonymizer.from_knowledge_base(generator.knowledge_base)
+    parser = AnonymizingParser(parser, anonymizer)
+    listener = ParserListener(parser)
+
+    # spin() simply keeps python from exiting until this node is stopped
+    rospy.spin()
+
+
+if __name__ == '__main__':
+    main()
