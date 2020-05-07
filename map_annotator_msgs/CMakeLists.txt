@@ -16,6 +16,7 @@ add_message_files(
   Pose.msg
   Region.msg
   MapAnnotation.msg
+  RobotPose.msg
 )
 
 ## Generate services in the 'srv' folder

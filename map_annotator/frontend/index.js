@@ -86,6 +86,12 @@ $(function() {
             name: "map_annotator/changes",
             messageType: "map_annotator_msgs/MapAnnotation"
         });
+        let robotPositionTopic = new ROSLIB.Topic({
+            ros: self.ros,
+            name: "map_annotator/robot_pose",
+            messageType: "map_annotator_msgs/RobotPose"
+        });
+        robotPositionTopic.subscribe(displayRobotPosition);
         // ROS service
         this.getMapsService = new ROSLIB.Service({
             ros: self.ros,
@@ -353,29 +359,13 @@ $(function() {
                         let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
                         poseGroup.appendChild(label);
                         // arrow head
-                        let arrowhead = document.createElementNS(NS, 'polygon');
-                        arrowhead.style.fill = BLUE;
-                        arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
-                        let arrowmarker = document.createElementNS(NS, 'marker');
-                        arrowmarker.setAttribute('id', 'arrowhead');
-                        arrowmarker.setAttribute('markerWidth', 3);
-                        arrowmarker.setAttribute('markerHeight', 3);
-                        arrowmarker.setAttribute('refX', 0);
-                        arrowmarker.setAttribute('refY', 1.5);
-                        arrowmarker.setAttribute('orient', "auto");
+                        let arrowhead = makeArrowhead();
+                        let arrowmarker = makeArrowmarker();
                         arrowmarker.appendChild(arrowhead);
                         self.editor.addElement(arrowmarker);
-                        // arrow body
-                        let line = document.createElementNS(NS, 'line');
-                        line.setAttribute('class', 'pose_line_annotation');
-                        line.setAttribute('x1', midpointX);
-                        line.setAttribute('y1', midpointY);
-                        line.setAttribute('x2', midpointX + LINE_LENGTH);
-                        line.setAttribute('y2', midpointY);
-                        line.setAttribute('marker-end', "url(#arrowhead)");
-                        line.style.stroke = BLUE;
-                        line.style.strokeWidth = LINE_WIDTH;
-                        poseGroup.appendChild(line);
+                        // arrow line
+                        let arrowline = makeArrowline();
+                        poseGroup.appendChild(arrowline);
                         self.editor.addElement(poseGroup);
                         self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
                     } else {
@@ -439,6 +429,17 @@ $(function() {
         }
     }
 
+    function displayRobotPosition(msg) {
+        let theta = -msg.theta;
+        console.log("X: " + msg.x);
+        console.log("Y: " + msg.y);
+        console.log("Theta: " + theta);
+        // TODO: convert X and Y from map coordinates to pixel coordinates
+
+        // TODO: display a pose
+    }
+
+
     /////////////////// Helper functions ///////////////////
     
     function makeLabel(x, y, color, defaultText) {
@@ -465,6 +466,37 @@ $(function() {
         circle.style.stroke = color;
         circle.style.fill = color;
         return circle;
+    }
+
+    function makeArrowhead() {
+        let arrowhead = document.createElementNS(NS, 'polygon');
+        arrowhead.style.fill = BLUE;
+        arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
+        return arrowhead;
+    }
+
+    function makeArrowmarker() {
+        let arrowmarker = document.createElementNS(NS, 'marker');
+        arrowmarker.setAttribute('id', 'arrowhead');
+        arrowmarker.setAttribute('markerWidth', 3);
+        arrowmarker.setAttribute('markerHeight', 3);
+        arrowmarker.setAttribute('refX', 0);
+        arrowmarker.setAttribute('refY', 1.5);
+        arrowmarker.setAttribute('orient', "auto");
+        return arrowmarker;
+    }
+
+    function makeArrowline() {
+        let arrowline = document.createElementNS(NS, 'line');
+        arrowline.setAttribute('class', 'pose_line_annotation');
+        arrowline.setAttribute('x1', midpointX);
+        arrowline.setAttribute('y1', midpointY);
+        arrowline.setAttribute('x2', midpointX + LINE_LENGTH);
+        arrowline.setAttribute('y2', midpointY);
+        arrowline.setAttribute('marker-end', "url(#arrowhead)");
+        arrowline.style.stroke = BLUE;
+        arrowline.style.strokeWidth = LINE_WIDTH;
+        return arrowline;
     }
 
     function getNewEndpoint(prevPoints) {

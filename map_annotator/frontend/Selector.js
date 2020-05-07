@@ -87,10 +87,10 @@ class Selector {
 			let target = event.target;
 			if (target.isSameNode(stage) === false) {
 				let targetType = target.getAttribute('class');
-				if (targetType === 'circle_annotation') {
+				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
 					offset.x = parseFloat(target.getAttribute('cx')) - event.clientX;
 					offset.y = parseFloat(target.getAttribute('cy')) - event.clientY;
-				} else if (targetType === 'pose_line_annotation') {
+				} else if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 					let x1 = target.getAttribute('x1');
 					let y1 = target.getAttribute('y1');
 					offset.x = parseFloat(x1) - event.clientX;
@@ -118,14 +118,14 @@ class Selector {
 				let label = getLabelElement(self.selected);
 				let newOffsetX = event.clientX + offset.x;
 				let newOffsetY = event.clientY + offset.y;
-				if (targetType === 'circle_annotation') {
+				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
 					self.selected.setAttribute('cx', newOffsetX);
 					self.selected.setAttribute('cy', newOffsetY);
 					displayCircleInfo(newOffsetX, newOffsetY);
 					label.setAttribute('x', newOffsetX);
 					label.setAttribute('y', newOffsetY + labelPadding);
 					self.changeTracker.applyPointChange("save", label.textContent, newOffsetX, newOffsetY);
-				} else if (targetType === 'pose_line_annotation') {
+				} else if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 					if (event.shiftKey === false) {
 						self.selected.setAttribute('x1', newOffsetX);
 						self.selected.setAttribute('y1', newOffsetY);
@@ -225,60 +225,63 @@ class Selector {
 						self.changeTracker.applyRegionChange("translate", regionName, points, translate[0], translate[1]);
 					}
 				} else if (targetType === 'text_annotation') {
-					let newLabel = promptForName(target.textContent);
-					if (newLabel != "") {
-						let labelType = target.parentElement.childNodes[1].getAttribute('class');
-						if (labelType === "circle_annotation" && !self.changeTracker.hasPoint(newLabel)) {
-							// check if the point already exists in the database
-							let request = new ROSLIB.ServiceRequest({
-								map_name: self.changeTracker.getMapName(),
-								point_name: newLabel
-							});
-							self.hasPointService.callService(request, function (result) {
-								if (!result.result) {
-									self.changeTracker.applyPointChange("rename", target.textContent, 
-											undefined, undefined, newLabel);
-									target.textContent = newLabel;
-								} else {
-									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-										"The name \"" + newLabel + "\" already exists!");
-								}
-							});
-						} else if (labelType === "pose_line_annotation" && !self.changeTracker.hasPose(newLabel)) {
-							// check if the pose already exists in the database
-							let request = new ROSLIB.ServiceRequest({
-								map_name: self.changeTracker.getMapName(),
-								pose_name: newLabel
-							});
-							self.hasPoseService.callService(request, function (result) {
-								if (!result.result) {
-									self.changeTracker.applyPoseChange("rename", target.textContent,
-										undefined, undefined, undefined, newLabel);
-									target.textContent = newLabel;
-								} else {
-									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-										"The name \"" + newLabel + "\" already exists!");
-								}
-							});
-						} else if (labelType === "region_annotation" && !self.changeTracker.hasRegion(newLabel)) {
-							// check if the region already exists in the database
-							let request = new ROSLIB.ServiceRequest({
-								map_name: self.changeTracker.getMapName(),
-								region_name: newLabel
-							});
-							self.hasRegionService.callService(request, function (result) {
-								if (!result.result) {
-									self.changeTracker.applyRegionChange("rename", target.textContent,
-										undefined, undefined, undefined, newLabel);
-									target.textContent = newLabel;
-								} else {
-									showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-										"The name \"" + newLabel + "\" already exists!");
-								}
-							});		
-						} else {
-							showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-								"The name \"" + newLabel + "\" already exists!");
+					let labelType = target.parentElement.childNodes[1].getAttribute('class');
+					if (labelType === "region_annotation" || 
+						(labelType != "region_annotation" && self.selectedRegion == null)) {
+						let newLabel = promptForName(target.textContent);
+						if (newLabel != "") {
+							if (labelType === "circle_annotation" && !self.changeTracker.hasPoint(newLabel)) {
+								// check if the point already exists in the database
+								let request = new ROSLIB.ServiceRequest({
+									map_name: self.changeTracker.getMapName(),
+									point_name: newLabel
+								});
+								self.hasPointService.callService(request, function (result) {
+									if (!result.result) {
+										self.changeTracker.applyPointChange("rename", target.textContent, 
+												undefined, undefined, newLabel);
+										target.textContent = newLabel;
+									} else {
+										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+											"The name \"" + newLabel + "\" already exists!");
+									}
+								});
+							} else if (labelType === "pose_line_annotation" && !self.changeTracker.hasPose(newLabel)) {
+								// check if the pose already exists in the database
+								let request = new ROSLIB.ServiceRequest({
+									map_name: self.changeTracker.getMapName(),
+									pose_name: newLabel
+								});
+								self.hasPoseService.callService(request, function (result) {
+									if (!result.result) {
+										self.changeTracker.applyPoseChange("rename", target.textContent,
+											undefined, undefined, undefined, newLabel);
+										target.textContent = newLabel;
+									} else {
+										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+											"The name \"" + newLabel + "\" already exists!");
+									}
+								});
+							} else if (labelType === "region_annotation" && !self.changeTracker.hasRegion(newLabel)) {
+								// check if the region already exists in the database
+								let request = new ROSLIB.ServiceRequest({
+									map_name: self.changeTracker.getMapName(),
+									region_name: newLabel
+								});
+								self.hasRegionService.callService(request, function (result) {
+									if (!result.result) {
+										self.changeTracker.applyRegionChange("rename", target.textContent,
+											undefined, undefined, undefined, newLabel);
+										target.textContent = newLabel;
+									} else {
+										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+											"The name \"" + newLabel + "\" already exists!");
+									}
+								});		
+							} else {
+								showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+									"The name \"" + newLabel + "\" already exists!");
+							}
 						}
 					}
 				}
