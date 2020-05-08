@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   industrial_ci:
     env:
+      AFTER_INSTALL_TARGET_DEPENDENCIES: 'git submodule update --init'
       AFTER_SCRIPT: 'cd $target_ws && rosenv && catkin build $(catkin list --depends-on roslint -u) --no-deps --no-status --verbose --make-args roslint'
       CATKIN_LINT: true
       ROS_DISTRO: melodic
