@@ -28,6 +28,9 @@ $(function() {
     $(document).ready(function() {
         // ELEMENTS
         this.statusBar = document.getElementById("statusBar");
+        this.loadYaml = document.getElementById("loadYaml");
+        this.loadImage = document.getElementById("loadImage");
+        let yamlUploaded = false;
         let title = document.getElementById("title");
         this.prevName = "";
         this.currentName = "";
@@ -41,6 +44,8 @@ $(function() {
         this.exitRegionEditor = document.getElementById("exitRegionEditor");
 
         let stage = document.getElementById("stage");
+        let canvas = document.getElementById('canvas');
+        
 
         document.getElementById("manageDbPopupCloseBtn").addEventListener("click", closeManageDbPopup);
         document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
@@ -51,6 +56,7 @@ $(function() {
         this.savePopup = document.getElementById("savePopup");
         let rename = document.getElementById("rename");
         let saveAs = document.getElementById("saveAs");
+        let clear = document.getElementById("clear");
         this.helpPopup = document.getElementById("helpPopup");
         this.helpPopupContent = document.getElementById("helpPopupContent");
         this.trackerPopup = document.getElementById("trackerPopup");
@@ -121,6 +127,7 @@ $(function() {
 
         // Main parts
         this.editor = new Editor();
+        this.editor.setup(stage, canvas);
         this.changeTracker = new ChangeTracker(mapAnnotationTopic);
         this.selector = new Selector(stage, this.editor, this.changeTracker, 
                 this.hasPointService, this.hasPoseService, this.hasRegionService,
@@ -140,30 +147,77 @@ $(function() {
         input.type = 'file';
         input.addEventListener('change', function (event) {
             let file = input.files[0];
-            if (file.name.split('.')[1] === 'svg') {
-                title.value = file.name.split('.')[0];
-                self.prevName = title.value;
+            let fileSuffix = file.name.split('.')[1];
+            if (!yamlUploaded && (fileSuffix === 'yaml' || fileSuffix === 'yml')) {  // YAML
                 let reader = new FileReader();
                 reader.addEventListener('load', function (event) {
-                    // read SVG file
+                    // read YAML file
                     let contents = event.target.result;
-                    self.editor.setSVG(stage, new DOMParser().parseFromString(contents, 'image/svg+xml'));
-                    setEditorButtonStatus(false);
-                    self.changeTracker.setMapName(title.value);
-                    self.changeTracker.reset();
-                    // now we know the image size, calculate the mid coordinate
-                    midpointX = self.editor.getMidpointX();
-                    midpointY = self.editor.getMidpointY();
-                }, false);
+                    // parse YAML file content to JSON
+                    let contentsJSON = jsyaml.load(contents);
+                    self.editor.setYAML(contentsJSON);
+                    let fileNameArr = contentsJSON["image"].split(".")[0].split("/");
+                    title.value = fileNameArr[fileNameArr.length - 1];
+                    // enable image upload
+                    yamlUploaded = true;
+                    self.loadYaml.style.display = "none";
+                    self.loadImage.style.display = "inline-block";
+                    clear.disabled = false;
+                });
                 reader.readAsText(file);
                 form.reset();
+            } else if (yamlUploaded) {
+                if (fileSuffix === 'svg' || fileSuffix === 'pgm') {
+                    title.value = file.name.split('.')[0];
+                    self.prevName = title.value;
+                    yamlUploaded = false;
+                    setEditorButtonStatus(false);
+                    if (fileSuffix === 'svg') {  // SVG
+                        let reader = new FileReader();
+                        reader.addEventListener('load', function (event) {
+                            // read SVG file
+                            let contents = event.target.result;
+                            self.editor.setSVG(new DOMParser().parseFromString(contents, 'image/svg+xml'));
+                            self.changeTracker.reset();
+                            self.changeTracker.setMapName(title.value);
+                            // now we know the image size, calculate the mid coordinate
+                            midpointX = self.editor.getMidpointX();
+                            midpointY = self.editor.getMidpointY();
+                        }, false);
+                        reader.readAsText(file);
+                        form.reset();
+                    } else {  // PGM
+                        let reader = new FileReader();
+                        reader.addEventListener('load', function (event) {
+                            // read PGM file
+                            let contents = event.target.result;
+                            self.editor.setPGM(contents);
+                            self.changeTracker.reset();
+                            self.changeTracker.setMapName(title.value);
+                            // now we know the image size, calculate the mid coordinate
+                            midpointX = self.editor.getMidpointX();
+                            midpointY = self.editor.getMidpointY();
+                        });
+                        reader.readAsArrayBuffer(file);
+                        form.reset();
+                    }
+
+                    
+                    
+                } else {
+                    showHelpPopup("Please upload a PGM or SVG file!");
+                }
             } else {
-                showHelpPopup("Please upload an SVG file!");
+                showHelpPopup("Please upload a YAML file!");
             }
         });
         form.appendChild(input);
 
-        document.getElementById("load").addEventListener('click', function () {
+        document.getElementById("loadYaml").addEventListener('click', function () {
+            input.click();
+        });
+
+        document.getElementById("loadImage").addEventListener('click', function () {
             input.click();
         });
 
@@ -175,6 +229,7 @@ $(function() {
         document.getElementById("save").addEventListener('click', function () {
             let save = confirm("Are you sure you want to SAVE the changes?");
             if (save == true) {
+                // download SVG
                 let blob = new Blob([self.editor.toString()], { type: 'text/plain' });
                 link.href = URL.createObjectURL(blob);
                 self.currentName = title.value;
@@ -206,14 +261,17 @@ $(function() {
         });
 
         // CLEAR
-        document.getElementById("clear").addEventListener('click', function () {
-            let clear = confirm("Are you sure you want to DISCARD the changes?");
-            if (clear == true) {
-                self.editor.clear();
+        clear.addEventListener('click', function () {
+            let clearConfirm = confirm("Are you sure you want to DISCARD the changes?");
+            if (clearConfirm == true) {
                 setEditorButtonStatus(true);
-                title.value = "Please upload an SVG file";
-                prevName = "";
+                self.editor.clear();
                 self.changeTracker.reset();
+                title.value = "Please upload a .yaml file to begin";
+                self.prevName = "";
+                self.loadYaml.style.display = "inline-block";
+                self.loadImage.style.display = "none";
+                yamlUploaded = false;
             }
         });
 

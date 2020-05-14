@@ -3,6 +3,15 @@ body {
     font-family: sans-serif;
 }
 
+#stage, #canvas {
+    position: absolute;
+    left: 1em;
+}
+
+#canvas {
+    z-index: -1;
+}
+
 button {
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
