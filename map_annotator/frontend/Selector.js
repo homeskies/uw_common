@@ -46,13 +46,15 @@ class Selector {
 		}
 
 		function displayCircleInfo(x, y) {
+			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-					"<p>X: " + x + "</p><p>Y: " + y + "</p>";
+				"<p>X: " + round(mapCoordinate[0]) + "</p><p>Y: " + round(mapCoordinate[1]) + "</p>";
 		}
 
 		function displayPoseInfo(x, y, theta) {
+			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-					"<p>X: " + x + "</p><p>Y: " + y + 
+				"<p>X: " + round(mapCoordinate[0]) + "</p><p>Y: " + round(mapCoordinate[1]) + 
 					"<p>THETA: " + round(-theta) + " rad</p>" +
 					"<p>THETA: " + round(convertToDeg(-theta)) + " deg</p>";
 		}
@@ -64,12 +66,19 @@ class Selector {
 		// HOVER
 		stage.addEventListener('mouseover', function (event) {
 			let target = event.target;
-			updateSelection(target);
+			if (target.getAttribute('id') != "background_img") {
+				updateSelection(target);
+			}
 			let targetType = target.getAttribute('class');
 			if (targetType === 'circle_annotation') {
 				displayCircleInfo(target.getAttribute('cx'), target.getAttribute('cy'));
 			} else if (targetType === 'pose_line_annotation') {
-				displayPoseInfo(target.getAttribute('x1'), target.getAttribute('y1'), angleOffset);
+				let x1 = target.getAttribute('x1');
+				let y1 = target.getAttribute('y1');
+				let x2 = target.getAttribute('x2');
+				let y2 = target.getAttribute('y2');
+				angleOffset = Math.atan2(y2 - y1, x2 - x1);
+				displayPoseInfo(x1, y1, angleOffset);
 			} else if (targetType === 'region_endpoint_annotation') {
 				let translate = getTranslate(target.parentElement.getAttribute('transform'));
 				let translatedX = parseFloat(target.getAttribute('cx')) + translate[0];

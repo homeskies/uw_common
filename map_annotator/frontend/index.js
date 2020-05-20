@@ -33,7 +33,6 @@ $(function() {
         let yamlUploaded = false;
         let title = document.getElementById("title");
         this.prevName = "";
-        this.currentName = "";
 
         let selectedShape = "Point";
         this.shapeTypeBtn = document.getElementById("shapeTypeBtn");
@@ -43,7 +42,7 @@ $(function() {
         this.deleteEndpoint = document.getElementById("deleteEndpoint");
         this.exitRegionEditor = document.getElementById("exitRegionEditor");
 
-        let stage = document.getElementById("stage");
+        this.stage = document.getElementById("stage");
         let canvas = document.getElementById('canvas');
         
 
@@ -92,10 +91,15 @@ $(function() {
             name: "map_annotator/changes",
             messageType: "map_annotator_msgs/MapAnnotation"
         });
+        // let robotPositionTopic = new ROSLIB.Topic({
+        //     ros: self.ros,
+        //     name: "map_annotator/robot_pose",
+        //     messageType: "map_annotator_msgs/RobotPose"
+        // });
         let robotPositionTopic = new ROSLIB.Topic({
             ros: self.ros,
-            name: "map_annotator/robot_pose",
-            messageType: "map_annotator_msgs/RobotPose"
+            name: "amcl_pose",
+            messageType: "geometry_msgs/PoseWithCovarianceStamped"
         });
         robotPositionTopic.subscribe(displayRobotPosition);
         // ROS service
@@ -127,9 +131,9 @@ $(function() {
 
         // Main parts
         this.editor = new Editor();
-        this.editor.setup(stage, canvas);
+        this.editor.setup(this.stage, canvas);
         this.changeTracker = new ChangeTracker(mapAnnotationTopic);
-        this.selector = new Selector(stage, this.editor, this.changeTracker, 
+        this.selector = new Selector(this.stage, this.editor, this.changeTracker, 
                 this.hasPointService, this.hasPoseService, this.hasRegionService,
                 LINE_LENGTH, LABEL_PADDING);
         
@@ -151,6 +155,8 @@ $(function() {
             if (!yamlUploaded && (fileSuffix === 'yaml' || fileSuffix === 'yml')) {  // YAML
                 let reader = new FileReader();
                 reader.addEventListener('load', function (event) {
+                    self.editor.clear();
+                    self.changeTracker.reset();
                     // read YAML file
                     let contents = event.target.result;
                     // parse YAML file content to JSON
@@ -172,6 +178,8 @@ $(function() {
                     self.prevName = title.value;
                     yamlUploaded = false;
                     setEditorButtonStatus(false);
+                    self.loadYaml.style.display = "inline-block";
+                    self.loadImage.style.display = "none";
                     if (fileSuffix === 'svg') {  // SVG
                         let reader = new FileReader();
                         reader.addEventListener('load', function (event) {
@@ -201,9 +209,6 @@ $(function() {
                         reader.readAsArrayBuffer(file);
                         form.reset();
                     }
-
-                    
-                    
                 } else {
                     showHelpPopup("Please upload a PGM or SVG file!");
                 }
@@ -228,35 +233,45 @@ $(function() {
 
         document.getElementById("save").addEventListener('click', function () {
             let save = confirm("Are you sure you want to SAVE the changes?");
-            if (save == true) {
+            if (save === true) {
+                // create a clone of the SVG node so we don't mess the original one
+                let clone = self.stage.cloneNode(true);
+                // remove the robot pose from the cloned SVG
+                let robotPoseElement = clone.getElementById("robotPose");
+                if (robotPoseElement) {
+                    clone.removeChild(robotPoseElement);
+                }
                 // download SVG
-                let blob = new Blob([self.editor.toString()], { type: 'text/plain' });
-                link.href = URL.createObjectURL(blob);
-                self.currentName = title.value;
-                link.download = self.currentName + '.svg';
+                let svgAsXML = (new XMLSerializer).serializeToString(clone);
+                link.href = "data:image/svg+xml;charset=utf8," + encodeURIComponent(svgAsXML);
+
+                // let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
+                // link.href = URL.createObjectURL(svgBlob);
+
+                link.download = title.value + '.svg';
                 link.click();
                 // publish all the changes to ROS node to save everything to database
-                if (self.prevName === self.currentName) {
-                    self.changeTracker.publishChanges("", self.currentName);
+                if (self.prevName === title.value) {
+                    self.changeTracker.publishChanges("", title.value);
                 } else {
                     // ask the user if they want to rename the file or make a copy?
                     showSavePopup();
                 }
                 // reset the change traker
-                self.prevName = self.currentName;
+                self.prevName = title.value;
                 self.changeTracker.reset();
             }           
         });
 
         // Rename
         rename.addEventListener('click', function () {
-            self.changeTracker.publishChanges(self.prevName, self.currentName);
+            self.changeTracker.publishChanges(self.prevName, title.value);
             closeSavePopup();
         });
 
         // Save as
         saveAs.addEventListener('click', function () {
-            self.changeTracker.publishChanges("", self.currentName);
+            self.changeTracker.publishChanges("", title.value);
             closeSavePopup();
         });
 
@@ -264,14 +279,7 @@ $(function() {
         clear.addEventListener('click', function () {
             let clearConfirm = confirm("Are you sure you want to DISCARD the changes?");
             if (clearConfirm == true) {
-                setEditorButtonStatus(true);
-                self.editor.clear();
-                self.changeTracker.reset();
-                title.value = "Please upload a .yaml file to begin";
-                self.prevName = "";
-                self.loadYaml.style.display = "inline-block";
-                self.loadImage.style.display = "none";
-                yamlUploaded = false;
+                clearEditor();
             }
         });
 
@@ -417,12 +425,12 @@ $(function() {
                         let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
                         poseGroup.appendChild(label);
                         // arrow head
-                        let arrowhead = makeArrowhead();
+                        let arrowhead = makeArrowhead(BLUE);
                         let arrowmarker = makeArrowmarker();
                         arrowmarker.appendChild(arrowhead);
                         self.editor.addElement(arrowmarker);
                         // arrow line
-                        let arrowline = makeArrowline();
+                        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, BLUE);
                         poseGroup.appendChild(arrowline);
                         self.editor.addElement(poseGroup);
                         self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
@@ -487,14 +495,61 @@ $(function() {
         }
     }
 
-    function displayRobotPosition(msg) {
-        let theta = -msg.theta;
-        console.log("X: " + msg.x);
-        console.log("Y: " + msg.y);
-        console.log("Theta: " + theta);
-        // TODO: convert X and Y from map coordinates to pixel coordinates
+    function clearEditor() {
+        setEditorButtonStatus(true);
+        self.editor.clear();
+        self.changeTracker.reset();
+        title.value = "Please upload a .yaml file to begin";
+        self.prevName = "";
+        self.loadYaml.style.display = "inline-block";
+        self.loadImage.style.display = "none";
+        yamlUploaded = false;
+    }
 
-        // TODO: display a pose
+    function displayRobotPosition(msg) {
+        if (self.editor.isReadyToUse()) {
+            let position = new ROSLIB.Vector3(msg.pose.pose.position);
+            let orientation = new ROSLIB.Quaternion(msg.pose.pose.orientation);
+
+            // convert X and Y from map coordinates to pixel coordinates
+            let pixelCoordinate = self.editor.getPixelCoordinate(position.x, position.y);
+            let x = pixelCoordinate[0];
+            let y = pixelCoordinate[1];
+
+            // TODO: calculate yaw
+            let theta = 0; // -msg.theta;
+
+            // display the pose
+            let robotPose = self.stage.getElementById("robotPose");
+            let labelY = y + LINE_LENGTH + LABEL_PADDING;
+            let poseX2 = x + LINE_LENGTH * Math.cos(theta);
+            let poseY2 = y + LINE_LENGTH * Math.sin(theta);
+            if (robotPose) {
+                let poseLabel = robotPose.childNodes[0];
+                poseLabel.setAttribute('x', x);
+                poseLabel.setAttribute('y', labelY);
+                let poseLine = robotPose.childNodes[1];
+                poseLine.setAttribute('x1', x);
+                poseLine.setAttribute('y1', y);
+                poseLine.setAttribute('x2', poseX2);
+                poseLine.setAttribute('y2', poseY2);
+            } else {
+                let poseGroup = document.createElementNS(NS, 'g');
+                poseGroup.id = "robotPose";
+                let label = makeLabel(x, labelY, GREEN, "Robot");
+                poseGroup.appendChild(label);
+                // arrow head
+                let arrowhead = makeArrowhead(GREEN);
+                let arrowmarker = makeArrowmarker();
+                arrowmarker.appendChild(arrowhead);
+                self.editor.addElement(arrowmarker);
+                // arrow line
+                let arrowline = makeArrowline(x, y, poseX2, poseY2, GREEN);
+                poseGroup.appendChild(arrowline);
+                self.editor.addElement(poseGroup);
+            }
+        }
+        
     }
 
 
@@ -502,7 +557,9 @@ $(function() {
     
     function makeLabel(x, y, color, defaultText) {
         let label = document.createElementNS(NS, 'text');
-        label.setAttribute('class', 'text_annotation');
+        if (color != GREEN) {
+            label.setAttribute('class', 'text_annotation');
+        }
         label.setAttribute('x', x);
         label.setAttribute('y', y);
         label.setAttribute('font-size', LABEL_FONT_SIZE);
@@ -526,9 +583,9 @@ $(function() {
         return circle;
     }
 
-    function makeArrowhead() {
+    function makeArrowhead(color) {
         let arrowhead = document.createElementNS(NS, 'polygon');
-        arrowhead.style.fill = BLUE;
+        arrowhead.style.fill = color;
         arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
         return arrowhead;
     }
@@ -544,15 +601,17 @@ $(function() {
         return arrowmarker;
     }
 
-    function makeArrowline() {
+    function makeArrowline(x1, y1, x2, y2, color) {
         let arrowline = document.createElementNS(NS, 'line');
-        arrowline.setAttribute('class', 'pose_line_annotation');
-        arrowline.setAttribute('x1', midpointX);
-        arrowline.setAttribute('y1', midpointY);
-        arrowline.setAttribute('x2', midpointX + LINE_LENGTH);
-        arrowline.setAttribute('y2', midpointY);
+        if (color != GREEN) {
+            arrowline.setAttribute('class', 'pose_line_annotation');
+        }
+        arrowline.setAttribute('x1', x1);
+        arrowline.setAttribute('y1', y1);
+        arrowline.setAttribute('x2', x2);
+        arrowline.setAttribute('y2', y2);
         arrowline.setAttribute('marker-end', "url(#arrowhead)");
-        arrowline.style.stroke = BLUE;
+        arrowline.style.stroke = color;
         arrowline.style.strokeWidth = LINE_WIDTH;
         return arrowline;
     }
@@ -592,7 +651,6 @@ $(function() {
         // call the ROS service to fetch names of all the maps
         let request = new ROSLIB.ServiceRequest({});
         self.getMapsService.callService(request, function(result) {
-            console.log(result);
             self.mapListContainer.innerHTML = "";
             let mapList = result.maps;
             for (let i = 0; i < mapList.length; i++) {

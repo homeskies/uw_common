@@ -106,14 +106,7 @@ def main():
     pixel_y = 426
     yaw = -1.2 # radians
 
-    map_height = pixel_height * resolution # 2 * abs(map_origin_y)
-    map_width = pixel_width * resolution # (pixel_width * map_height) / pixel_height
-
     map_origin_y = (pixel_height - abs(map_origin_y) / resolution) * resolution
-
-    # map_x = (pixel_x * map_width) / pixel_width - abs(map_origin_x)
-    # map_y = -((pixel_y * map_height) / pixel_height - abs(map_origin_y))
-
     map_x = pixel_x * resolution - abs(map_origin_x)
     map_y = - (pixel_y * resolution - abs(map_origin_y))
     map_quaternion = quaternion_from_euler(0, 0, yaw)

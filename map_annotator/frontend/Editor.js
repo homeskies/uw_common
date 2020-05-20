@@ -2,10 +2,12 @@ class Editor {
 	constructor() {
 		this.svg = null;
 		this.canvas = null;
-		this.width = 0;
-		this.height = 0;
-		this.resolution = -1;
+		this.pixelWidth = 0;
+		this.pixelHeight = 0;
+		this.resolution = 0;
 		this.origin = [0, 0];
+		this.mapOriginY = 0;
+		this.isReady = false;
 	}
 
 	setup(svg, canvas) {
@@ -13,12 +15,28 @@ class Editor {
 		this.canvas = canvas;
 	}
 
+	isReadyToUse() {
+		return this.isReady;
+	}
+
 	getMidpointX() {
-		return this.width / 2;
+		return this.pixelWidth / 2;
 	}
 
 	getMidpointY() {
-		return this.height / 2;
+		return this.pixelHeight / 2;
+	}
+
+	getMapCoordinate(pixelX, pixelY) {
+		let mapX = pixelX * this.resolution - Math.abs(this.origin[0]);
+		let mapY = - (pixelY * this.resolution - Math.abs(this.mapOriginY));
+		return [mapX, mapY];
+	}
+
+	getPixelCoordinate(mapX, mapY) {
+		let pixelX = (mapX + Math.abs(this.origin[0])) / this.resolution;
+		let pixelY = - (mapY - Math.abs(this.mapOriginY)) / this.resolution;
+		return [pixelX, pixelY];
 	}
 
 	setYAML(yamlFileContent) {
@@ -28,10 +46,9 @@ class Editor {
 	}
 
 	setSVG(svgFileContent) {	
-		this.width = svgFileContent.documentElement.viewBox.baseVal.width;
-		this.height = svgFileContent.documentElement.viewBox.baseVal.height;
-		this.setSVGDimension();
+		this.setDimension(svgFileContent.documentElement.viewBox.baseVal.width, svgFileContent.documentElement.viewBox.baseVal.height);
 		this.svg.innerHTML = svgFileContent.documentElement.innerHTML;
+		this.isReady = true;
 	}
 
 	setPGM(pgmFileContent) {
@@ -44,8 +61,8 @@ class Editor {
 			if (!currentLine.startsWith("#")) {
 				lineProcessed++;
 				if (lineProcessed === 2) {
-					this.width = currentLine.split(" ")[0];
-					this.height = currentLine.split(" ")[1];
+					// update image dimension
+					this.setDimension(currentLine.split(" ")[0], currentLine.split(" ")[1]);
 				}
 			}
 			charProcessed += currentLine.length + 1;
@@ -61,21 +78,22 @@ class Editor {
 			dataArr.push(255);  // a
 		}
 		// draw the PGM image on the canvas
-		let imageData = new ImageData(this.width, this.height);
+		let imageData = new ImageData(this.pixelWidth, this.pixelHeight);
 		imageData.data.set(dataArr);
 		let context = this.canvas.getContext('2d');
 		this.canvas.width = imageData.width;
 		this.canvas.height = imageData.height;
 		context.putImageData(imageData, 0, 0);
-		// link the PGM to the SVG stage
-		let pgmImage = document.createElementNS('http://www.w3.org/2000/svg', "use");
-		pgmImage.setAttribute("x", 0);
-		pgmImage.setAttribute("y", 0);
-		pgmImage.setAttribute("width", imageData.width);
-		pgmImage.setAttribute("height", imageData.height);
-		pgmImage.setAttribute("href", "#canvas");
-		this.svg.appendChild(pgmImage);
-		this.setSVGDimension();
+
+		// get base64 encoded PNG data url from canvas
+		let imgDataUrl = this.canvas.toDataURL("image/png");
+		// link the PNG to the SVG stage
+		let svgImg = document.createElementNS("http://www.w3.org/2000/", "image");
+		svgImg.id = "background_img";
+		svgImg.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgDataUrl);
+		this.svg.appendChild(svgImg);
+
+		this.isReady = true;
 	}
 
 	addElement(element) {
@@ -97,24 +115,31 @@ class Editor {
 		}
 		let context = this.canvas.getContext('2d');
 		context.clearRect(0, 0, this.canvas.width, this.canvas.height);;
-		this.width = "";
-		this.height = "";
-		this.resolution = -1;
+		this.pixelWidth = 0;
+		this.pixelHeight = 0;
+		this.resolution = 0;
 		this.origin = [0, 0];
+		this.mapOriginY = 0;
+		this.isReady = false;
 	}
 
-	toString() {
+	toString(svg) {
 		return [
 			'<?xml version="1.0" encoding="UTF-8"?>\n',
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + this.width + ' ' + this.height + '\">\n',
-			this.svg.innerHTML,
+			'<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" ',
+			'width="' + this.pixelWidth + '" height="' + this.pixelHeight + '" ',
+			'viewBox="0 0 ' + this.pixelWidth + ' ' + this.pixelHeight + '\">\n',
+			svg.innerHTML,
 			'</svg>'
 		].join('');
 	}
 
-	setSVGDimension() {
-		this.svg.setAttribute("width", this.width);
-		this.svg.setAttribute("height", this.height);
-		this.svg.setAttribute("viewBox", "0 0 " + this.width + " " + this.height);
+	setDimension(pixelWidth, pixelHeight) {
+		this.pixelWidth = pixelWidth;
+		this.pixelHeight = pixelHeight;
+		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin[1]) / this.resolution) * this.resolution;
+		this.svg.setAttribute("width", this.pixelWidth);
+		this.svg.setAttribute("height", this.pixelHeight);
+		this.svg.setAttribute("viewBox", "0 0 " + this.pixelWidth + " " + this.pixelHeight);
 	}
 }
