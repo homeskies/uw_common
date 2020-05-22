@@ -132,7 +132,7 @@ $(function() {
         // Main parts
         this.editor = new Editor();
         this.editor.setup(this.stage, canvas);
-        this.changeTracker = new ChangeTracker(mapAnnotationTopic);
+        this.changeTracker = new ChangeTracker(mapAnnotationTopic, this.editor);
         this.selector = new Selector(this.stage, this.editor, this.changeTracker, 
                 this.hasPointService, this.hasPoseService, this.hasRegionService,
                 LINE_LENGTH, LABEL_PADDING);
@@ -180,31 +180,25 @@ $(function() {
                     setEditorButtonStatus(false);
                     self.loadYaml.style.display = "inline-block";
                     self.loadImage.style.display = "none";
-                    if (fileSuffix === 'svg') {  // SVG
+                    if (fileSuffix === 'svg') {  // file uploaded is SVG
                         let reader = new FileReader();
                         reader.addEventListener('load', function (event) {
                             // read SVG file
                             let contents = event.target.result;
                             self.editor.setSVG(new DOMParser().parseFromString(contents, 'image/svg+xml'));
-                            self.changeTracker.reset();
-                            self.changeTracker.setMapName(title.value);
-                            // now we know the image size, calculate the mid coordinate
-                            midpointX = self.editor.getMidpointX();
-                            midpointY = self.editor.getMidpointY();
+                            // initialize the program state
+                            initializeProgram();
                         }, false);
                         reader.readAsText(file);
                         form.reset();
-                    } else {  // PGM
+                    } else {  // file uploaded is PGM
                         let reader = new FileReader();
                         reader.addEventListener('load', function (event) {
                             // read PGM file
                             let contents = event.target.result;
                             self.editor.setPGM(contents);
-                            self.changeTracker.reset();
-                            self.changeTracker.setMapName(title.value);
-                            // now we know the image size, calculate the mid coordinate
-                            midpointX = self.editor.getMidpointX();
-                            midpointY = self.editor.getMidpointY();
+                            // initialize the program state
+                            initializeProgram();
                         });
                         reader.readAsArrayBuffer(file);
                         form.reset();
@@ -242,11 +236,8 @@ $(function() {
                     clone.removeChild(robotPoseElement);
                 }
                 // download SVG
-                let svgAsXML = (new XMLSerializer).serializeToString(clone);
-                link.href = "data:image/svg+xml;charset=utf8," + encodeURIComponent(svgAsXML);
-
-                // let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
-                // link.href = URL.createObjectURL(svgBlob);
+                let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
+                link.href = URL.createObjectURL(svgBlob);
 
                 link.download = title.value + '.svg';
                 link.click();
@@ -629,6 +620,15 @@ $(function() {
             maxY = Math.max(maxY, point[1]);
         }
         return [getRandomInteger(minX - 10, maxX - 10), getRandomInteger(minY - 10, maxY - 10)];
+    }
+
+    function initializeProgram() {
+        // reset the change tracker
+        self.changeTracker.reset();
+        self.changeTracker.setMapName(title.value);
+        // now we know the image size, calculate the mid coordinate
+        midpointX = self.editor.getMidpointX();
+        midpointY = self.editor.getMidpointY();
     }
 
     function setEditorButtonStatus(disabled) {

@@ -48,15 +48,16 @@ class Selector {
 		function displayCircleInfo(x, y) {
 			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-				"<p>X: " + round(mapCoordinate[0]) + "</p><p>Y: " + round(mapCoordinate[1]) + "</p>";
+				"<p>X: " + round(mapCoordinate[0]) + "(map) " + x + "(px)</p>" +
+				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + y + "(px)</p>";
 		}
 
 		function displayPoseInfo(x, y, theta) {
 			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-				"<p>X: " + round(mapCoordinate[0]) + "</p><p>Y: " + round(mapCoordinate[1]) + 
-					"<p>THETA: " + round(-theta) + " rad</p>" +
-					"<p>THETA: " + round(convertToDeg(-theta)) + " deg</p>";
+				"<p>X: " + round(mapCoordinate[0]) + "(map) " + x + "(px)</p>" +
+				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + y + "(px)</p>" +
+				"<p>THETA: " + round(-theta) + "rad " + round(convertToDeg(-theta)) + "deg</p>";
 		}
 
 		function clearCoordinateInfo() {

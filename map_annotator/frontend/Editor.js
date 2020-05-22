@@ -126,7 +126,7 @@ class Editor {
 	toString(svg) {
 		return [
 			'<?xml version="1.0" encoding="UTF-8"?>\n',
-			'<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" ',
+			'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet" ',
 			'width="' + this.pixelWidth + '" height="' + this.pixelHeight + '" ',
 			'viewBox="0 0 ' + this.pixelWidth + ' ' + this.pixelHeight + '\">\n',
 			svg.innerHTML,

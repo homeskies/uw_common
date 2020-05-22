@@ -1,11 +1,14 @@
 class ChangeTracker {
-    constructor(mapAnnotationTopic) {
+    constructor(mapAnnotationTopic, editor) {
+        // trackers
         this.mapName = "";
         this.pointTracker = new Map();  // point name -> Point
         this.poseTracker = new Map();   // pose name -> Pose
         this.regionTracker = new Map(); // region name -> Region
-        // ROS topics
+        // ROS topic
         this.mapAnnotationTopic =mapAnnotationTopic;
+        // editor
+        this.editor = editor;
     }
 
     setMapName(mapName) {
@@ -235,14 +238,7 @@ class ChangeTracker {
         }
         let poses = [];
         for (let [k, v] of this.poseTracker) {
-            poses.push(new ROSLIB.Message({
-                prev_name: v.getPrevName(),
-                current_name: v.getName(),
-                deleted: v.getDeleted(),
-                x: v.getX(),
-                y: v.getY(),
-                theta: -v.getTheta()
-            }));
+            poses.push(this.getPoseMsg(v));
         }
         let regions = [];
         for (let [k, v] of this.regionTracker) {
@@ -269,12 +265,27 @@ class ChangeTracker {
     }
 
     getPointMsg(point) {
+        // convert to map coordinates
+        let mapCoordinate = this.editor.getMapCoordinate(point.getX(), point.getY());
         return new ROSLIB.Message({
             prev_name: point.getPrevName(),
             current_name: point.getName(),
             deleted: point.getDeleted(),
-            x: point.getX(),
-            y: point.getY()
+            x: mapCoordinate[0],
+            y: mapCoordinate[1]
+        });
+    }
+
+    getPoseMsg(pose) {
+        // convert to map coordinates
+        let mapCoordinate = this.editor.getMapCoordinate(pose.getX(), pose.getY());
+        return new ROSLIB.Message({
+            prev_name: pose.getPrevName(),
+            current_name: pose.getName(),
+            deleted: pose.getDeleted(),
+            x: mapCoordinate[0],
+            y: mapCoordinate[1],
+            theta: -pose.getTheta()
         });
     }
 }

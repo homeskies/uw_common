@@ -77,6 +77,7 @@ class Server(object):
 
 
     def process_changes(self, msg):
+        print("**************************************")
         print("Previous Map Name: " + msg.prev_name)
         print("Current Map Name: " + msg.current_name)
         
