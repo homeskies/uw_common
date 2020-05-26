@@ -241,13 +241,11 @@ $(function() {
                 // publish all the changes to ROS node to save everything to database
                 if (self.prevName === title.value) {
                     self.changeTracker.publishChanges("", title.value);
+                    resetAfterSaving();
                 } else {
                     // ask the user if they want to rename the file or make a copy?
                     showSavePopup();
                 }
-                // reset the change traker
-                self.prevName = title.value;
-                self.changeTracker.reset();
             }           
         });
 
@@ -255,12 +253,14 @@ $(function() {
         rename.addEventListener('click', function () {
             self.changeTracker.publishChanges(self.prevName, title.value);
             closeSavePopup();
+            resetAfterSaving();
         });
 
         // Save as
         saveAs.addEventListener('click', function () {
-            self.changeTracker.publishChanges("", title.value);
+            self.changeTracker.publishChanges(self.prevName, title.value, saveAs=true);
             closeSavePopup();
+            resetAfterSaving();
         });
 
         // CLEAR
@@ -686,6 +686,11 @@ $(function() {
         self.savePopup.style.display = "block";
         // disable everything in the background
         self.disableDiv.style.display = "block";
+    }
+
+    function resetAfterSaving() {
+        self.prevName = title.value;
+        self.changeTracker.reset();
     }
 
     function showHelpPopup(content) {

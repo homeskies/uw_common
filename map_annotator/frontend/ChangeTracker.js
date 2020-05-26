@@ -231,7 +231,7 @@ class ChangeTracker {
         this.regionTracker.set(regionName, newRegion);
     }
 
-    publishChanges(prevName, currentName) {
+    publishChanges(prevName, currentName, saveAs=false) {
         let points = [];
         for (let [k, v] of this.pointTracker) {
             points.push(this.getPointMsg(v));
@@ -257,6 +257,7 @@ class ChangeTracker {
         let msg = new ROSLIB.Message({
             prev_name: prevName,
             current_name: currentName,
+            save_as: saveAs,
             points: points,
             poses: poses,
             regions: regions

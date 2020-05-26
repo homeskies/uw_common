@@ -6,6 +6,7 @@ from tf.transformations import euler_from_quaternion
 from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse, HasPoint, HasPointResponse, HasPose, HasPoseResponse, HasRegion, HasRegionResponse
 from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region, RobotPose
 import knowledge_representation
+import copy
 
 def wait_for_time():
     """
@@ -71,16 +72,35 @@ class Server(object):
     def process_changes(self, msg):
         print("**************************************")
         print("Previous Map Name: " + msg.prev_name)
-        print("Current Map Name: " + msg.current_name)
+        print("Current Map Name:  " + msg.current_name)
+        print("--------------------------")
         
         target_map = None
-        if msg.prev_name != "":  # a rename happens
-            # TODO: rename the map
-            pass
+        prev_map = self.has_map(msg.prev_name)
+        curr_map = self.has_map(msg.current_name)
 
-        # retrieve the map, or create one if no such map exists
-        target_map = self.db.get_map(msg.current_name)
+        if prev_map:
+            if curr_map:
+                # replace current map with previous map
+                print("Map \"" + msg.current_name + "\" is replaced by map \"" + msg.prev_name + "\".")
+                curr_map.delete()
+            if not msg.save_as or (msg.save_as and curr_map):
+                # rename previous map, and make edits on the previous map
+                print("Map \"" + msg.prev_name + "\" is renamed to \"" + msg.current_name + "\".")
+                prev_map.rename(msg.current_name)
+                target_map = prev_map
+            else:
+                # TODO: duplicate the previous map, and set the name as current name
+                # how to make a deep copy???
+                print("TODO")
+                return
+
+
+        else:  # make edits on current map, or create one if no such map exists
+            target_map = curr_map if curr_map else self.db.get_map(msg.current_name)
         
+        print("Editing Map Named: " + str(target_map.get_name()))
+
         # handle point changes
         self.process_point_changes(target_map, msg.points)
         # handle pose changes
@@ -90,7 +110,7 @@ class Server(object):
     
 
     def process_point_changes(self, target_map, point_changes):
-        print("BEFORE: ")
+        print("POINT BEFORE: ")
         self._print_all_points(target_map)
 
         for pt in point_changes:
@@ -112,12 +132,12 @@ class Server(object):
                     curr_pt.delete()
                 target_map.add_point(pt.current_name, pt.x, pt.y)
         
-        print("AFTER: ")
+        print("POINT AFTER: ")
         self._print_all_points(target_map)
 
     
     def process_pose_changes(self, target_map, pose_changes):
-        print("BEFORE: ")
+        print("POSE BEFORE: ")
         self._print_all_poses(target_map)
 
         for ps in pose_changes:
@@ -140,12 +160,12 @@ class Server(object):
                     curr_ps.delete()
                 target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)
         
-        print("AFTER: ")
+        print("POSE AFTER: ")
         self._print_all_poses(target_map)
         
         
     def process_region_changes(self, target_map, region_changes):
-        print("BEFORE: ")
+        print("REGION BEFORE: ")
         self._print_all_regions(target_map)
 
         for r in region_changes:
@@ -174,8 +194,19 @@ class Server(object):
                         curr_r.delete()
                     target_map.add_region(r.current_name, updated_endpoints)        
         
-        print("AFTER: ")
+        print("REGION AFTER: ")
         self._print_all_regions(target_map)
+
+
+    def has_map(self, name):
+        """ Return the map with the given name if it exists, return None otherwise. """
+        if name != "":
+            map_concept = self.db.get_concept("map")
+            all_map_instances = map_concept.get_instances()
+            for m in all_map_instances:
+                if name == m.get_name():
+                    return self.db.get_map(name)
+        return None
 
     
     def update_region_endpoints(self, old_endpoints, new_endpoints):
@@ -203,31 +234,28 @@ class Server(object):
 
     
     def _print_all_points(self, target_map):
-        print("Points: ")
         points = target_map.get_all_points()
         for pt in points:
             print(pt.get_name())
             print("\t" + str(pt.x) + ", " + str(pt.y))
-        print("-------------")
+        print("--------------------------")
 
     
     def _print_all_poses(self, target_map):
-        print("Poses: ")
         poses = target_map.get_all_poses()
         for ps in poses:
             print(ps.get_name())
             print("\t" + str(ps.x) + ", " + str(ps.y) + ", " + str(ps.theta))
-        print("-------------")
+        print("--------------------------")
 
 
     def _print_all_regions(self, target_map):
-        print("Regions: ")
         regions = target_map.get_all_regions()
         for r in regions:
             print(r.get_name())
             for pt in r.points:
                 print("\t" + str(pt))
-        print("-------------")
+        print("--------------------------")
 
 
 def main():

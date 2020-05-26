@@ -18,66 +18,69 @@ def wait_for_time():
 
 def database_demo():
     ltmc = knowledge_representation.get_default_ltmc()
-    ltmc.delete_all_attributes()
-    ltmc.delete_all_entities()
-    # retrieve a map of arena, or create one called arena if no such map exists.
-    arena = ltmc.get_map("arena")
+    # retrieve a map of demo_map, or create one called demo_map if no such map exists.
+    demo_map = ltmc.get_map("demo_map")
 
-    if arena.get_point("point1") is None:
-        arena.add_point("point1", 1.0, 2.0)
-    pt2 = arena.get_point("point2")
+    if demo_map.get_point("point1") is None:
+        demo_map.add_point("point1", 1.0, 2.0)
+    pt2 = demo_map.get_point("point2")
     if not pt2:
-        arena.add_point("point2", 2.0, 3.0)
+        demo_map.add_point("point2", 2.0, 3.0)
 
+    print("In demo_map:")
     print("POINTS: ")
-    points = arena.get_all_points()
+    points = demo_map.get_all_points()
     for pt in points:
         print(pt.get_name())
         print("\t" + str(pt.x) + ", " + str(pt.y))
 
-    if not arena.get_pose("pose1"):
-        arena.add_pose("pose1", 1.0, 2.0, 3.14)
-    if not arena.get_pose("pose2"):
-        arena.add_pose("pose2", 2.0, 3.0, 0)
+    if not demo_map.get_pose("pose1"):
+        demo_map.add_pose("pose1", 1.0, 2.0, 3.14)
+    if not demo_map.get_pose("pose2"):
+        demo_map.add_pose("pose2", 2.0, 3.0, 0)
 
     print("POSES: ")
-    poses = arena.get_all_poses()
+    poses = demo_map.get_all_poses()
     for ps in poses:
         print(ps.get_name())
         print("\t" + str(ps.x) + ", " + str(ps.y) + ", " + str(ps.theta))
 
 
-    if not arena.get_region("region1"):
-        arena.add_region("region1", [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)])
-    if not arena.get_region("region2"):
-        arena.add_region("region2", [(10.0, 20.0), (30.0, 40.0)])
-    if not arena.get_region("region3"):
-        arena.add_region("region3", [(100.0, 200.0), (300.0, 400.0), (500.0, 600.0)])
+    if not demo_map.get_region("region1"):
+        demo_map.add_region("region1", [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)])
+    if not demo_map.get_region("region2"):
+        demo_map.add_region("region2", [(10.0, 20.0), (30.0, 40.0)])
+    if not demo_map.get_region("region3"):
+        demo_map.add_region("region3", [(100.0, 200.0), (300.0, 400.0), (500.0, 600.0)])
 
     print("REGIONS: ")
-    regions = arena.get_all_regions()
+    regions = demo_map.get_all_regions()
     for r in regions:
         print(r.get_name())
         for pt in r.points:
             print("\t" + str(pt))
 
     print("******************************************")
-    arena1 = ltmc.get_map("arena1")
+    print("Get all maps:")
+    demo_map1 = ltmc.get_map("demo_map1")
     map_concept = ltmc.get_concept("map")
     all_map_instances = map_concept.get_instances()
     for m in all_map_instances:
         print(m.get_name())
 
-    # clear up
-    ltmc.delete_all_attributes()
-    ltmc.delete_all_entities()
+    print("******************************************")
+    print("Map Rename")
+    print("before: " + str(demo_map.get_name()))
+    demo_map.rename("demo_map_renamed")
+    print("after: " + str(demo_map.get_name()))
 
 
+    # clean up
+    demo_map.delete()
+    demo_map1.delete()
 
-def main():
-    rospy.init_node('test_node')
-    wait_for_time()
 
+def coordinate_conversion_demo():
     # pixel coordinate to map cpprdinate conversion 
     viz_pub = rospy.Publisher('visualization_marker', Marker, queue_size=5)
     rospy.sleep(0.5)
@@ -123,9 +126,13 @@ def main():
                     header=ps.header,
                     color=ColorRGBA(1.0, 0.75, 0.3, 1.0))
     viz_pub.publish(marker)
-    
 
-    rospy.spin()
+
+def main():
+    rospy.init_node('test_node')
+    wait_for_time()
+
+    database_demo()
 
 
 if __name__ == '__main__':
