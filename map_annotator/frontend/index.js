@@ -17,6 +17,8 @@ $(function() {
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 25;
 
+    const UNIT_VECTOR = new ROSLIB.Vector3({x: 0, y: 1, z: 0});
+
     let self = this;
 
     let midpointX = 0;
@@ -91,11 +93,6 @@ $(function() {
             name: "map_annotator/changes",
             messageType: "map_annotator_msgs/MapAnnotation"
         });
-        // let robotPositionTopic = new ROSLIB.Topic({
-        //     ros: self.ros,
-        //     name: "map_annotator/robot_pose",
-        //     messageType: "map_annotator_msgs/RobotPose"
-        // });
         let robotPositionTopic = new ROSLIB.Topic({
             ros: self.ros,
             name: "amcl_pose",
@@ -417,11 +414,11 @@ $(function() {
                         poseGroup.appendChild(label);
                         // arrow head
                         let arrowhead = makeArrowhead(BLUE);
-                        let arrowmarker = makeArrowmarker();
+                        let arrowmarker = makeArrowmarker(labelName);
                         arrowmarker.appendChild(arrowhead);
                         self.editor.addElement(arrowmarker);
                         // arrow line
-                        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, BLUE);
+                        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, labelName, BLUE);
                         poseGroup.appendChild(arrowline);
                         self.editor.addElement(poseGroup);
                         self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
@@ -501,14 +498,14 @@ $(function() {
         if (self.editor.isReadyToUse()) {
             let position = new ROSLIB.Vector3(msg.pose.pose.position);
             let orientation = new ROSLIB.Quaternion(msg.pose.pose.orientation);
-
             // convert X and Y from map coordinates to pixel coordinates
             let pixelCoordinate = self.editor.getPixelCoordinate(position.x, position.y);
             let x = pixelCoordinate[0];
             let y = pixelCoordinate[1];
-
-            // TODO: calculate yaw
-            let theta = 0; // -msg.theta;
+            // calculate yaw
+            let t = UNIT_VECTOR.clone();
+            t.multiplyQuaternion(orientation);
+            let theta = Math.atan2(UNIT_VECTOR.y, UNIT_VECTOR.x) - Math.atan2(t.y, t.x);
 
             // display the pose
             let robotPose = self.stage.getElementById("robotPose");
@@ -531,16 +528,15 @@ $(function() {
                 poseGroup.appendChild(label);
                 // arrow head
                 let arrowhead = makeArrowhead(GREEN);
-                let arrowmarker = makeArrowmarker();
+                let arrowmarker = makeArrowmarker("RobotPoseArrowMarker");
                 arrowmarker.appendChild(arrowhead);
                 self.editor.addElement(arrowmarker);
                 // arrow line
-                let arrowline = makeArrowline(x, y, poseX2, poseY2, GREEN);
+                let arrowline = makeArrowline(x, y, poseX2, poseY2, "RobotPoseArrowMarker", GREEN);
                 poseGroup.appendChild(arrowline);
                 self.editor.addElement(poseGroup);
             }
         }
-        
     }
 
 
@@ -581,9 +577,9 @@ $(function() {
         return arrowhead;
     }
 
-    function makeArrowmarker() {
+    function makeArrowmarker(arrowMarkerId) {
         let arrowmarker = document.createElementNS(NS, 'marker');
-        arrowmarker.setAttribute('id', 'arrowhead');
+        arrowmarker.setAttribute('id', 'arrowhead' + arrowMarkerId);
         arrowmarker.setAttribute('markerWidth', 3);
         arrowmarker.setAttribute('markerHeight', 3);
         arrowmarker.setAttribute('refX', 0);
@@ -592,16 +588,18 @@ $(function() {
         return arrowmarker;
     }
 
-    function makeArrowline(x1, y1, x2, y2, color) {
+    function makeArrowline(x1, y1, x2, y2, arrowMarkerId, color) {
         let arrowline = document.createElementNS(NS, 'line');
         if (color != GREEN) {
             arrowline.setAttribute('class', 'pose_line_annotation');
+        } else {
+            arrowline.setAttribute('class', 'robot_pose_line_annotation');
         }
         arrowline.setAttribute('x1', x1);
         arrowline.setAttribute('y1', y1);
         arrowline.setAttribute('x2', x2);
         arrowline.setAttribute('y2', y2);
-        arrowline.setAttribute('marker-end', "url(#arrowhead)");
+        arrowline.setAttribute('marker-end', "url(#arrowhead" + arrowMarkerId + ")");
         arrowline.style.stroke = color;
         arrowline.style.strokeWidth = LINE_WIDTH;
         return arrowline;

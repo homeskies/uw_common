@@ -48,15 +48,15 @@ class Selector {
 		function displayCircleInfo(x, y) {
 			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-				"<p>X: " + round(mapCoordinate[0]) + "(map) " + x + "(px)</p>" +
-				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + y + "(px)</p>";
+				"<p>X: " + round(mapCoordinate[0]) + "(map) " + round(x) + "(px)</p>" +
+				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + round(y) + "(px)</p>";
 		}
 
 		function displayPoseInfo(x, y, theta) {
 			let mapCoordinate = self.editor.getMapCoordinate(x, y);
 			document.getElementById("coordinateInfo").innerHTML = 
-				"<p>X: " + round(mapCoordinate[0]) + "(map) " + x + "(px)</p>" +
-				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + y + "(px)</p>" +
+				"<p>X: " + round(mapCoordinate[0]) + "(map) " + round(x) + "(px)</p>" +
+				"<p>Y: " + round(mapCoordinate[1]) + "(map) " + round(y) + "(px)</p>" +
 				"<p>THETA: " + round(-theta) + "rad " + round(convertToDeg(-theta)) + "deg</p>";
 		}
 
@@ -73,7 +73,7 @@ class Selector {
 			let targetType = target.getAttribute('class');
 			if (targetType === 'circle_annotation') {
 				displayCircleInfo(target.getAttribute('cx'), target.getAttribute('cy'));
-			} else if (targetType === 'pose_line_annotation') {
+			} else if (targetType === 'pose_line_annotation' || targetType === 'robot_pose_line_annotation') {
 				let x1 = target.getAttribute('x1');
 				let y1 = target.getAttribute('y1');
 				let x2 = target.getAttribute('x2');

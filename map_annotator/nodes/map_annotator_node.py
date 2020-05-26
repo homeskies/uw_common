@@ -18,9 +18,6 @@ def wait_for_time():
 class Server(object):
     def __init__(self):
         self.db = knowledge_representation.get_default_ltmc()
-        # subscriber and publisher
-        self.amcl_pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, callback=self.publish_robot_pose)
-        self.robot_pose_pub = rospy.Publisher("map_annotator/robot_pose", RobotPose, queue_size=1)
         # services
         self.get_maps_srv = rospy.Service("map_annotator/get_maps", GetMaps, self.get_all_maps)
         self.delete_map_srv = rospy.Service("map_annotator/delete_map", DeleteMap, self.delete_map)
@@ -28,11 +25,6 @@ class Server(object):
         self.has_pose_srv = rospy.Service("map_annotator/has_pose", HasPose, self.has_pose)
         self.has_region_srv = rospy.Service("map_annotator/has_region", HasRegion, self.has_region)
         rospy.sleep(0.5)
-
-
-    def publish_robot_pose(self, msg):
-        (roll, pitch, yaw) = euler_from_quaternion([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
-        self.robot_pose_pub.publish(RobotPose(x=msg.pose.pose.position.x, y=msg.pose.pose.position.y, theta=yaw))
 
 
     def get_all_maps(self, request):
