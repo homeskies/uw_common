@@ -84,22 +84,21 @@ class Server(object):
                 # replace current map with previous map
                 print("Map \"" + msg.current_name + "\" is replaced by map \"" + msg.prev_name + "\".")
                 curr_map.delete()
-            if not msg.save_as or (msg.save_as and curr_map):
+            if msg.save_as:
+                # deep copy the previous map, and set new map name as current name
+                print("Map \"" + msg.prev_name + "\" is duplicated with name \"" + msg.current_name + "\".")
+                target_map = prev_map.deep_copy(msg.current_name)
+            else:
                 # rename previous map, and make edits on the previous map
                 print("Map \"" + msg.prev_name + "\" is renamed to \"" + msg.current_name + "\".")
                 prev_map.rename(msg.current_name)
                 target_map = prev_map
-            else:
-                # TODO: duplicate the previous map, and set the name as current name
-                # how to make a deep copy???
-                print("TODO")
-                return
-
-
         else:  # make edits on current map, or create one if no such map exists
             target_map = curr_map if curr_map else self.db.get_map(msg.current_name)
         
+        print("--------------------------")
         print("Editing Map Named: " + str(target_map.get_name()))
+        print("--------------------------")
 
         # handle point changes
         self.process_point_changes(target_map, msg.points)

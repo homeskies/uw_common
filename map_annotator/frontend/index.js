@@ -29,13 +29,22 @@ $(function() {
 
     $(document).ready(function() {
         // ELEMENTS
+        // General controls
         this.statusBar = document.getElementById("statusBar");
         this.loadYaml = document.getElementById("loadYaml");
         this.loadImage = document.getElementById("loadImage");
-        let yamlUploaded = false;
         let title = document.getElementById("title");
-        this.prevName = "";
+        this.dbManageBtn = document.getElementById("manageDb");
+        this.saveBtn = document.getElementById("save");
+        let clear = document.getElementById("clear");
 
+        // Program state variables
+        title.value = "Please upload a .yaml file to begin";
+        this.yamlUploaded = false;
+        this.prevName = "";
+        this.dbConnected = false;
+
+        // Editor buttons
         let selectedShape = "Point";
         this.shapeTypeBtn = document.getElementById("shapeTypeBtn");
         this.addShapeBtn = document.getElementById("add");
@@ -44,10 +53,11 @@ $(function() {
         this.deleteEndpoint = document.getElementById("deleteEndpoint");
         this.exitRegionEditor = document.getElementById("exitRegionEditor");
 
+        // Svg and canvas
         this.stage = document.getElementById("stage");
         let canvas = document.getElementById('canvas');
         
-
+        // Popup controls
         document.getElementById("manageDbPopupCloseBtn").addEventListener("click", closeManageDbPopup);
         document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
         document.getElementById("trackerPopupCloseBtn").addEventListener("click", closeTrackerPopup);
@@ -57,7 +67,6 @@ $(function() {
         this.savePopup = document.getElementById("savePopup");
         let rename = document.getElementById("rename");
         let saveAs = document.getElementById("saveAs");
-        let clear = document.getElementById("clear");
         this.helpPopup = document.getElementById("helpPopup");
         this.helpPopupContent = document.getElementById("helpPopupContent");
         this.trackerPopup = document.getElementById("trackerPopup");
@@ -136,8 +145,11 @@ $(function() {
         
         setEditorButtonStatus(true);
 
+        // CONNECT/DISCONNECT TO DATABASE
+        document.getElementById("connectDb").addEventListener('click', toggleDbConnection);
+
         // MANAGE DATABASE
-        document.getElementById("manageDb").addEventListener('click', showManageDbPopup);
+        this.dbManageBtn.addEventListener('click', showManageDbPopup);
 
         // LOAD
         let form = document.createElement('form');
@@ -149,7 +161,7 @@ $(function() {
         input.addEventListener('change', function (event) {
             let file = input.files[0];
             let fileSuffix = file.name.split('.')[1];
-            if (!yamlUploaded && (fileSuffix === 'yaml' || fileSuffix === 'yml')) {  // YAML
+            if (!self.yamlUploaded && (fileSuffix === 'yaml' || fileSuffix === 'yml')) {  // YAML
                 let reader = new FileReader();
                 reader.addEventListener('load', function (event) {
                     self.editor.clear();
@@ -162,18 +174,18 @@ $(function() {
                     let fileNameArr = contentsJSON["image"].split(".")[0].split("/");
                     title.value = fileNameArr[fileNameArr.length - 1];
                     // enable image upload
-                    yamlUploaded = true;
+                    self.yamlUploaded = true;
                     self.loadYaml.style.display = "none";
                     self.loadImage.style.display = "inline-block";
                     clear.disabled = false;
                 });
                 reader.readAsText(file);
                 form.reset();
-            } else if (yamlUploaded) {
+            } else if (self.yamlUploaded) {
                 if (fileSuffix === 'svg' || fileSuffix === 'pgm') {
                     title.value = file.name.split('.')[0];
                     self.prevName = title.value;
-                    yamlUploaded = false;
+                    self.yamlUploaded = false;
                     setEditorButtonStatus(false);
                     self.loadYaml.style.display = "inline-block";
                     self.loadImage.style.display = "none";
@@ -222,7 +234,7 @@ $(function() {
         link.style.display = 'none';
         document.body.appendChild(link);
 
-        document.getElementById("save").addEventListener('click', function () {
+        this.saveBtn.addEventListener('click', function () {
             let save = confirm("Are you sure you want to SAVE the changes?");
             if (save === true) {
                 // create a clone of the SVG node so we don't mess the original one
@@ -235,16 +247,20 @@ $(function() {
                 // download SVG
                 let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
                 link.href = URL.createObjectURL(svgBlob);
-
                 link.download = title.value + '.svg';
                 link.click();
-                // publish all the changes to ROS node to save everything to database
-                if (self.prevName === title.value) {
-                    self.changeTracker.publishChanges("", title.value);
+
+                if (self.dbConnected) {
+                    // publish all the changes to ROS node to save everything to database
+                    if (self.prevName === title.value) {
+                        self.changeTracker.publishChanges("", title.value);
+                        resetAfterSaving();
+                    } else {
+                        // ask the user if they want to rename the file or make a copy?
+                        showSavePopup();
+                    }
+                } else {  // only download a local copy
                     resetAfterSaving();
-                } else {
-                    // ask the user if they want to rename the file or make a copy?
-                    showSavePopup();
                 }
             }           
         });
@@ -266,7 +282,7 @@ $(function() {
         // CLEAR
         clear.addEventListener('click', function () {
             let clearConfirm = confirm("Are you sure you want to DISCARD the changes?");
-            if (clearConfirm == true) {
+            if (clearConfirm === true) {
                 clearEditor();
             }
         });
@@ -373,24 +389,22 @@ $(function() {
         let labelName = promptForName("point");
         if (labelName != "") {
             if (!self.changeTracker.hasPoint(labelName)) {
-                // check if the point already exists in the database
-                let request = new ROSLIB.ServiceRequest({
-                    map_name: self.prevName,
-                    point_name: labelName
-                });
-                self.hasPointService.callService(request, function (result) {
-                    if (!result.result) {
-                        let pointGroup = document.createElementNS(NS, 'g');
-                        let label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, labelName);
-                        pointGroup.appendChild(label);
-                        let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
-                        pointGroup.appendChild(circle);
-                        self.editor.addElement(pointGroup);
-                        self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
-                    } else {
-                        showHelpPopup("The point named \"" + labelName + "\" already exists!");
-                    }
-                });
+                if (self.dbConnected) {
+                    // check if the point already exists in the database
+                    let request = new ROSLIB.ServiceRequest({
+                        map_name: self.prevName,
+                        point_name: labelName
+                    });
+                    self.hasPointService.callService(request, function (result) {
+                        if (!result.result) {
+                            addPointWithName(labelName);
+                        } else {
+                            showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                        }
+                    });
+                } else {
+                    addPointWithName(labelName);
+                }
             } else {
                 showHelpPopup("The point named \"" + labelName + "\" already exists!");
             }
@@ -401,31 +415,22 @@ $(function() {
         let labelName = promptForName("pose");
         if (labelName != "") {
             if (!self.changeTracker.hasPose(labelName)) {
-                // check if the pose already exists in the database
-                let request = new ROSLIB.ServiceRequest({
-                    map_name: self.prevName,
-                    pose_name: labelName
-                });
-                self.hasPoseService.callService(request, function (result) {
-                    if (!result.result) {
-                        showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
-                        let poseGroup = document.createElementNS(NS, 'g');
-                        let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
-                        poseGroup.appendChild(label);
-                        // arrow head
-                        let arrowhead = makeArrowhead(BLUE);
-                        let arrowmarker = makeArrowmarker(labelName);
-                        arrowmarker.appendChild(arrowhead);
-                        self.editor.addElement(arrowmarker);
-                        // arrow line
-                        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, labelName, BLUE);
-                        poseGroup.appendChild(arrowline);
-                        self.editor.addElement(poseGroup);
-                        self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
-                    } else {
-                        showHelpPopup("The point named \"" + labelName + "\" already exists!");
-                    }
-                });
+                if (self.dbConnected) {
+                    // check if the pose already exists in the database
+                    let request = new ROSLIB.ServiceRequest({
+                        map_name: self.prevName,
+                        pose_name: labelName
+                    });
+                    self.hasPoseService.callService(request, function (result) {
+                        if (!result.result) {
+                            addPoseWithName(labelName);
+                        } else {
+                            showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                        }
+                    });
+                } else {
+                    addPoseWithName(labelName);
+                }
             } else {
                 showHelpPopup("The pose named \"" + labelName + "\" already exists!");
             }
@@ -436,47 +441,22 @@ $(function() {
         let labelName = promptForName("region");
         if (labelName != "") {
             if (!self.changeTracker.hasRegion(labelName)) {
-                // check if the region already exists in the database
-                let request = new ROSLIB.ServiceRequest({
-                    map_name: self.prevName,
-                    region_name: labelName
-                });
-                self.hasRegionService.callService(request, function (result) {
-                    if (!result.result) {
-                        showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
-                        let regionId;
-                        if (unusedRegionId.length > 0) {
-                            regionId = unusedRegionId.pop();
+                if (self.dbConnected) {
+                    // check if the region already exists in the database
+                    let request = new ROSLIB.ServiceRequest({
+                        map_name: self.prevName,
+                        region_name: labelName
+                    });
+                    self.hasRegionService.callService(request, function (result) {
+                        if (!result.result) {
+                            addRegionWithName(labelName);
                         } else {
-                            regionCount++;
-                            regionId = regionCount;
+                            showHelpPopup("The region named \"" + labelName + "\" already exists!");
                         }
-                        let regionGroup = document.createElementNS(NS, 'g');
-                        regionGroup.setAttribute("transform", "translate(0, 0)");
-                        let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
-                        regionGroup.appendChild(label);
-                        // add a triangle to start
-                        let basicRegion = document.createElementNS(NS, 'polygon');
-                        let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY], 
-                                    [midpointX, midpointY + INITIAL_REGION_SIZE]];
-                        basicRegion.setAttribute('class', 'region_annotation');
-                        basicRegion.setAttribute('points', convertToString(points));
-                        basicRegion.style.fill = 'transparent';
-                        basicRegion.style.stroke = YELLOW;
-                        basicRegion.style.strokeWidth = LINE_WIDTH;
-                        regionGroup.appendChild(basicRegion);
-                        // mark end points with circles
-                        for (let i = 0; i < points.length; i++) {
-                            let point = points[i];
-                            let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
-                            regionGroup.appendChild(circle);
-                        }
-                        self.editor.addElement(regionGroup);
-                        self.changeTracker.applyRegionChange("save", labelName, points);
-                    } else {
-                        showHelpPopup("The region named \"" + labelName + "\" already exists!");
-                    }
-                });
+                    });
+                } else {
+                    addRegionWithName(labelName);
+                }
             } else {
                 showHelpPopup("The region named \"" + labelName + "\" already exists!");
             }
@@ -491,7 +471,7 @@ $(function() {
         self.prevName = "";
         self.loadYaml.style.display = "inline-block";
         self.loadImage.style.display = "none";
-        yamlUploaded = false;
+        self.yamlUploaded = false;
     }
 
     function displayRobotPosition(msg) {
@@ -541,6 +521,66 @@ $(function() {
 
 
     /////////////////// Helper functions ///////////////////
+
+    function addPointWithName(labelName) {
+        let pointGroup = document.createElementNS(NS, 'g');
+        let label = makeLabel(midpointX, midpointY + LABEL_PADDING, RED, labelName);
+        pointGroup.appendChild(label);
+        let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
+        pointGroup.appendChild(circle);
+        self.editor.addElement(pointGroup);
+        self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
+    }
+
+    function addPoseWithName(labelName) {
+        showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
+        let poseGroup = document.createElementNS(NS, 'g');
+        let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
+        poseGroup.appendChild(label);
+        // arrow head
+        let arrowhead = makeArrowhead(BLUE);
+        let arrowmarker = makeArrowmarker(labelName);
+        arrowmarker.appendChild(arrowhead);
+        self.editor.addElement(arrowmarker);
+        // arrow line
+        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, labelName, BLUE);
+        poseGroup.appendChild(arrowline);
+        self.editor.addElement(poseGroup);
+        self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
+    }
+
+    function addRegionWithName(labelName) {
+        showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
+        let regionId;
+        if (unusedRegionId.length > 0) {
+            regionId = unusedRegionId.pop();
+        } else {
+            regionCount++;
+            regionId = regionCount;
+        }
+        let regionGroup = document.createElementNS(NS, 'g');
+        regionGroup.setAttribute("transform", "translate(0, 0)");
+        let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
+        regionGroup.appendChild(label);
+        // add a triangle to start
+        let basicRegion = document.createElementNS(NS, 'polygon');
+        let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY],
+        [midpointX, midpointY + INITIAL_REGION_SIZE]];
+        basicRegion.setAttribute('class', 'region_annotation');
+        basicRegion.setAttribute('points', convertToString(points));
+        basicRegion.style.fill = 'transparent';
+        basicRegion.style.stroke = YELLOW;
+        basicRegion.style.strokeWidth = LINE_WIDTH;
+        regionGroup.appendChild(basicRegion);
+        // mark end points with circles
+        for (let i = 0; i < points.length; i++) {
+            let point = points[i];
+            let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
+            regionGroup.appendChild(circle);
+        }
+        self.editor.addElement(regionGroup);
+        self.changeTracker.applyRegionChange("save", labelName, points);
+    }
     
     function makeLabel(x, y, color, defaultText) {
         let label = document.createElementNS(NS, 'text');
@@ -640,6 +680,34 @@ $(function() {
         // mark the selection and return the selected item name
         selectedItem.parentElement.parentElement.querySelector(".dropbtn").innerHTML = selectedItem.innerHTML;
         return selectedItem.innerHTML;
+    }
+
+    function toggleDbConnection() {
+        if (!self.dbConnected) {
+            // show a confirmation box, because the editor will be cleared after the switch
+            let connectDbConfirm = confirm("Are you sure you want to CONNECT to database? " +
+                    "The svg editor will be CLEARED after the switch!");
+            if (connectDbConfirm === true) {
+                if (self.statusBar.innerHTML === "Connected to ROS!") {
+                    // connect to database
+                    clearEditor();
+                    this.innerText = "Disconnect from Database";
+                    this.style.backgroundColor = DARK_YELLOW;
+                    self.dbManageBtn.style.display = "block";
+                    self.saveBtn.innerText = "Save to DB & Download";
+                    self.dbConnected = true;
+                } else {
+                    showHelpPopup("Cannot connect to database, please refresh the page.");
+                }
+            }
+        } else {
+            // disconnect from database
+            this.innerText = "Connect to Database";
+            this.style.backgroundColor = GREEN;
+            self.dbManageBtn.style.display = "none";
+            self.saveBtn.innerText = "Download Image";
+            self.dbConnected = false;
+        }
     }
 
     function showManageDbPopup() {

@@ -92,9 +92,16 @@ input {
     margin: 0.5em;
 }
 
+#connectDb, #manageDb, #fileBtns button:enabled {
+    color: white;
+}
+
+#connectDb {
+    background-color: #a7c44c;
+}
+
 #manageDb, #fileBtns button:enabled {
     background-color: #8c6693;
-    color: white;
 }
 
 #showChanges:enabled {
@@ -111,9 +118,18 @@ input {
     font-size: 14px;
 }
 
-#manageDb {
+#connectDb, #manageDb {
     position: absolute;
+}
+
+#connectDb {
     right: 1em;
+}
+
+#manageDb {
+    right: 1em;
+    top: 3em;
+    margin-top: 0.3em;
 }
 
 #coordinateInfo {
@@ -125,6 +141,10 @@ input {
 
 #coordinateInfo p {
     margin: 8px;
+}
+
+#regionShapeBtns {
+    margin-bottom: 1em;
 }
 
 /* Popup */
