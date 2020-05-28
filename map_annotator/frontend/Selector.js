@@ -19,6 +19,7 @@ class Selector {
 		this.helpPopupContent = document.getElementById("helpPopupContent");
 
 		let selection = document.createElement('span');
+		selection.id = "selection";
 		selection.style.position = 'absolute';
 		selection.style.display = 'none';
 		selection.style.outline = 'solid 2px #99f';
@@ -32,7 +33,7 @@ class Selector {
 		let regionReferencePoint = { x: 0, y: 0 };
 
 		function updateSelection(element) {
-			if (element.isSameNode(stage)) {
+			if (element.isSameNode(stage) || element.id === "background_img") {
 				selection.style.display = 'none';
 				return;
 			}
@@ -126,8 +127,13 @@ class Selector {
 			if (self.selected) {
 				let targetType = self.selected.getAttribute('class');
 				let label = getLabelElement(self.selected);
+				
 				let newOffsetX = event.clientX + offset.x;
 				let newOffsetY = event.clientY + offset.y;
+
+				// let newOffsetX = self.editor.getUntransformedPixelX(event.clientX + offset.x);
+				// let newOffsetY = self.editor.getUntransformedPixelY(event.clientY + offset.y);
+
 				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
 					self.selected.setAttribute('cx', newOffsetX);
 					self.selected.setAttribute('cy', newOffsetY);

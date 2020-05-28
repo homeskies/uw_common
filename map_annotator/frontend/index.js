@@ -238,7 +238,7 @@ $(function() {
             let save = confirm("Are you sure you want to SAVE the changes?");
             if (save === true) {
                 // create a clone of the SVG node so we don't mess the original one
-                let clone = self.stage.cloneNode(true);
+                let clone = self.editor.cloneStage();
                 // remove the robot pose from the cloned SVG
                 let robotPoseElement = clone.getElementById("robotPose");
                 if (robotPoseElement) {

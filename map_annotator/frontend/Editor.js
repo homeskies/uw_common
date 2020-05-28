@@ -8,6 +8,10 @@ class Editor {
 		this.origin = [0, 0];
 		this.mapOriginY = 0;
 		this.isReady = false;
+		// pan & zoom variables
+		this.panZoomStage = null;
+		this.pan = [0, 0];
+		this.zoom = 1;
 	}
 
 	setup(svg, canvas) {
@@ -39,6 +43,14 @@ class Editor {
 		return [pixelX, pixelY];
 	}
 
+	getUntransformedPixelX(transformedX) {
+		return this.zoom * transformedX + this.pan[0];
+	}
+
+	getUntransformedPixelY(transformedY) {
+		return this.zoom * transformedY + this.pan[1];
+	}
+
 	setYAML(yamlFileContent) {
 		this.resolution = yamlFileContent["resolution"];
 		this.origin[0] = yamlFileContent["origin"][0];
@@ -49,6 +61,8 @@ class Editor {
 		this.setDimension(svgFileContent.documentElement.viewBox.baseVal.width, svgFileContent.documentElement.viewBox.baseVal.height);
 		this.svg.innerHTML = svgFileContent.documentElement.innerHTML;
 		this.isReady = true;
+
+		this.enablePanZoom();
 	}
 
 	setPGM(pgmFileContent) {
@@ -88,17 +102,35 @@ class Editor {
 		// get base64 encoded PNG data url from canvas
 		let imgDataUrl = this.canvas.toDataURL("image/png");
 		// link the PNG to the SVG stage
-		let svgImg = document.createElementNS("http://www.w3.org/2000/", "image");
+		let svgImg = document.createElementNS("http://www.w3.org/2000/svg", "image");
 		svgImg.id = "background_img";
 		svgImg.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgDataUrl);
 		this.svg.appendChild(svgImg);
 
 		this.isReady = true;
+
+		this.enablePanZoom();
+	}
+
+	enablePanZoom() {
+		console.log("INIT")
+        this.panZoomStage = svgPanZoom("#stage", {
+			controlIconsEnabled: true,
+			panEnabled: false,		
+			onZoom: function(newZoom) {
+				this.zoom = newZoom;
+				console.log("ZOOM: " + this.zoom);
+			}, 
+			onPan: function(newPan) {
+				this.pan = [newPan.x, newPan.y];
+				console.log("PAN: " + this.pan);
+			}}
+		);
 	}
 
 	addElement(element) {
-		this.svg.appendChild(element);
-		this.svg.appendChild(document.createTextNode('\n'));
+		document.querySelector(".svg-pan-zoom_viewport").appendChild(element);
+		document.querySelector(".svg-pan-zoom_viewport").appendChild(document.createTextNode('\n'));
 	}
 
 	deleteElement(element) {
@@ -109,7 +141,23 @@ class Editor {
 		g.removeChild(element);
 	}
 
+	cloneStage() {
+		// reset current pan zoom, and remove all the pan zoom node from svg node
+		this.panZoomStage.reset();
+		this.panZoomStage.destroy();
+		// create a clone of the current svg
+		let clone = this.svg.cloneNode(true);
+		// restart pan zoom
+		this.enablePanZoom();
+		return clone;
+	}
+
 	clear() {
+		if (this.panZoomStage) {
+			this.panZoomStage.destroy();
+		}
+		this.pan = [0, 0];
+		this.zoom = 1;
 		if (this.svg) {
 			this.svg.textContent = "";
 		}
@@ -121,6 +169,7 @@ class Editor {
 		this.origin = [0, 0];
 		this.mapOriginY = 0;
 		this.isReady = false;
+		document.getElementById("selection").style.display = "none";
 	}
 
 	toString(svg) {

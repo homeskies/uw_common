@@ -59,3 +59,6 @@ tags
 *.swo
 .idea
 cmake-build-debug
+node_modules/
+bower_components/
+*.DS_Store
