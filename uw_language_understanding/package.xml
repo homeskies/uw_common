@@ -15,6 +15,6 @@
     <exec_depend>rospack</exec_depend>
 
     <export>
-        <pip_requirements>src/gpsr-command-understanding/requirements.txt</pip_requirements>
+        <pip_requirements>requirements.txt</pip_requirements>
     </export>
 </package>

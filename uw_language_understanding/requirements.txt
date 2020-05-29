@@ -1,0 +1,1 @@
+git+git://github.com/nickswalker/gpsr-command-understanding@779e847#egg=gpsr_command_understanding

@@ -1,3 +1,0 @@
-[submodule "uw_language_understanding/src/gpsr-command-understanding"]
-	path = uw_language_understanding/src/gpsr-command-understanding
-	url = https://github.com/nickswalker/gpsr-command-understanding.git

@@ -3,8 +3,6 @@ project(uw_language_understanding)
 
 find_package(catkin REQUIRED COMPONENTS catkin_virtualenv)
 
-catkin_python_setup()
-
 catkin_package()
 
 # The command understanding code uses AllenNLP,
@@ -18,6 +16,3 @@ catkin_install_python(
   PROGRAMS
     scripts/understanding_server_demo
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(FILES src/gpsr-command-understanding/requirements.txt
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
