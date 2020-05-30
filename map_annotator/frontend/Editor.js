@@ -5,12 +5,12 @@ class Editor {
 		this.pixelWidth = 0;
 		this.pixelHeight = 0;
 		this.resolution = 0;
-		this.origin = [0, 0];
+		this.origin = {x: 0, y: 0};
 		this.mapOriginY = 0;
 		this.isReady = false;
 		// pan & zoom variables
 		this.panZoomStage = null;
-		this.pan = [0, 0];
+		this.pan = {x: 0, y: 0};
 		this.zoom = 1;
 	}
 
@@ -32,29 +32,47 @@ class Editor {
 	}
 
 	getMapCoordinate(pixelX, pixelY) {
-		let mapX = pixelX * this.resolution - Math.abs(this.origin[0]);
+		let mapX = pixelX * this.resolution - Math.abs(this.origin.x);
 		let mapY = - (pixelY * this.resolution - Math.abs(this.mapOriginY));
 		return [mapX, mapY];
 	}
 
 	getPixelCoordinate(mapX, mapY) {
-		let pixelX = (mapX + Math.abs(this.origin[0])) / this.resolution;
+		let pixelX = (mapX + Math.abs(this.origin.x)) / this.resolution;
 		let pixelY = - (mapY - Math.abs(this.mapOriginY)) / this.resolution;
 		return [pixelX, pixelY];
 	}
 
+	getUnzoomedLength(zoomedLength) {
+		return zoomedLength / this.zoom;
+	}
+
 	getUntransformedPixelX(transformedX) {
-		return this.zoom * transformedX + this.pan[0];
+		console.log("prev: " + transformedX);
+		let x = (transformedX - this.pan.x) / this.zoom;
+		console.log("curr: " + x);
+		return (transformedX - this.pan.x) / this.zoom;
+	}
+
+	getTransformedPixelX(untransformedX) {
+		console.log("prev: " + untransformedX);
+		let x = untransformedX * this.zoom + this.pan.x;
+		console.log("curr: " + x);
+		return untransformedX * this.zoom + this.pan.x;
 	}
 
 	getUntransformedPixelY(transformedY) {
-		return this.zoom * transformedY + this.pan[1];
+		return (transformedY - this.pan.y) / this.zoom;
+	}
+
+	getTransformedPixelY(untransformedY) {
+		return untransformedY * this.zoom + this.pan.y;
 	}
 
 	setYAML(yamlFileContent) {
 		this.resolution = yamlFileContent["resolution"];
-		this.origin[0] = yamlFileContent["origin"][0];
-		this.origin[1] = yamlFileContent["origin"][1];
+		this.origin.x = yamlFileContent["origin"][0];
+		this.origin.y = yamlFileContent["origin"][1];
 	}
 
 	setSVG(svgFileContent) {	
@@ -113,17 +131,19 @@ class Editor {
 	}
 
 	enablePanZoom() {
-		console.log("INIT")
         this.panZoomStage = svgPanZoom("#stage", {
 			controlIconsEnabled: true,
 			panEnabled: false,		
 			onZoom: function(newZoom) {
+				console.log("ZOOM: " + newZoom);
 				this.zoom = newZoom;
-				console.log("ZOOM: " + this.zoom);
+				document.getElementById("selection").style.display = "none";
 			}, 
 			onPan: function(newPan) {
-				this.pan = [newPan.x, newPan.y];
-				console.log("PAN: " + this.pan);
+				console.log("PAN: " + newPan.x + ", " + newPan.y);
+				this.pan.x = newPan.x;
+				this.pan.y = newPan.y;
+				document.getElementById("selection").style.display = "none";
 			}}
 		);
 	}
@@ -156,7 +176,7 @@ class Editor {
 		if (this.panZoomStage) {
 			this.panZoomStage.destroy();
 		}
-		this.pan = [0, 0];
+		this.pan = {x: 0, y: 0};
 		this.zoom = 1;
 		if (this.svg) {
 			this.svg.textContent = "";
@@ -166,7 +186,7 @@ class Editor {
 		this.pixelWidth = 0;
 		this.pixelHeight = 0;
 		this.resolution = 0;
-		this.origin = [0, 0];
+		this.origin = {x: 0, y: 0};
 		this.mapOriginY = 0;
 		this.isReady = false;
 		document.getElementById("selection").style.display = "none";
@@ -186,7 +206,7 @@ class Editor {
 	setDimension(pixelWidth, pixelHeight) {
 		this.pixelWidth = pixelWidth;
 		this.pixelHeight = pixelHeight;
-		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin[1]) / this.resolution) * this.resolution;
+		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin.y) / this.resolution) * this.resolution;
 		this.svg.setAttribute("width", this.pixelWidth);
 		this.svg.setAttribute("height", this.pixelHeight);
 		this.svg.setAttribute("viewBox", "0 0 " + this.pixelWidth + " " + this.pixelHeight);

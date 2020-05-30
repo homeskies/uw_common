@@ -33,7 +33,9 @@ class Selector {
 		let regionReferencePoint = { x: 0, y: 0 };
 
 		function updateSelection(element) {
-			if (element.isSameNode(stage) || element.id === "background_img") {
+			if (element.isSameNode(stage) || element.getAttribute('id') === "background_img" || 
+				(element.getAttribute('class') && element.getAttribute('class').startsWith("svg-pan-zoom-control"))) {
+				// remove previous highlight
 				selection.style.display = 'none';
 				return;
 			}
@@ -68,9 +70,7 @@ class Selector {
 		// HOVER
 		stage.addEventListener('mouseover', function (event) {
 			let target = event.target;
-			if (target.getAttribute('id') != "background_img") {
-				updateSelection(target);
-			}
+			updateSelection(target);
 			let targetType = target.getAttribute('class');
 			if (targetType === 'circle_annotation') {
 				displayCircleInfo(target.getAttribute('cx'), target.getAttribute('cy'));
@@ -96,11 +96,13 @@ class Selector {
 		// DRAG & DROP
 		stage.addEventListener('mousedown', function (event) {
 			let target = event.target;
-			if (target.isSameNode(stage) === false) {
-				let targetType = target.getAttribute('class');
+			let targetType = target.getAttribute('class');
+			if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
 				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
+
 					offset.x = parseFloat(target.getAttribute('cx')) - event.clientX;
 					offset.y = parseFloat(target.getAttribute('cy')) - event.clientY;
+
 				} else if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 					let x1 = target.getAttribute('x1');
 					let y1 = target.getAttribute('y1');
@@ -127,12 +129,9 @@ class Selector {
 			if (self.selected) {
 				let targetType = self.selected.getAttribute('class');
 				let label = getLabelElement(self.selected);
-				
+
 				let newOffsetX = event.clientX + offset.x;
 				let newOffsetY = event.clientY + offset.y;
-
-				// let newOffsetX = self.editor.getUntransformedPixelX(event.clientX + offset.x);
-				// let newOffsetY = self.editor.getUntransformedPixelY(event.clientY + offset.y);
 
 				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
 					self.selected.setAttribute('cx', newOffsetX);
@@ -142,12 +141,12 @@ class Selector {
 					label.setAttribute('y', newOffsetY + labelPadding);
 					self.changeTracker.applyPointChange("save", label.textContent, newOffsetX, newOffsetY);
 				} else if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
-					if (event.shiftKey === false) {
+					if (!event.shiftKey) {  // move pose
 						self.selected.setAttribute('x1', newOffsetX);
 						self.selected.setAttribute('y1', newOffsetY);
 						label.setAttribute('x', newOffsetX);
 						label.setAttribute('y', newOffsetY + lineLength + labelPadding);
-					} else {  // right click, change the arrow orientation
+					} else {  // shift key pressed, change the arrow orientation
 						let x1 = parseFloat(self.selected.getAttribute('x1'));
 						let y1 = parseFloat(self.selected.getAttribute('y1'));
 						angleOffset = Math.atan2(newOffsetY - y1, newOffsetX - x1);
@@ -194,8 +193,8 @@ class Selector {
 
 		stage.addEventListener('click', function (event) {
 			let target = event.target;
-			if (target.isSameNode(stage) === false) {
-				let targetType = target.getAttribute('class');
+			let targetType = target.getAttribute('class');
+			if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
 				if (self.inShapeDeleteMode && targetType === self.typeToDelete) {
 					// DELETE shape
 					let elementName = getLabelElement(target).textContent;
@@ -247,53 +246,71 @@ class Selector {
 						let newLabel = promptForName(target.textContent);
 						if (newLabel != "") {
 							if (labelType === "circle_annotation" && !self.changeTracker.hasPoint(newLabel)) {
-								// check if the point already exists in the database
-								let request = new ROSLIB.ServiceRequest({
-									map_name: self.changeTracker.getMapName(),
-									point_name: newLabel
-								});
-								self.hasPointService.callService(request, function (result) {
-									if (!result.result) {
-										self.changeTracker.applyPointChange("rename", target.textContent, 
-												undefined, undefined, newLabel);
-										target.textContent = newLabel;
-									} else {
-										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-											"The name \"" + newLabel + "\" already exists!");
-									}
-								});
+								if (self.dbConnected()) {
+									// check if the point already exists in the database
+									let request = new ROSLIB.ServiceRequest({
+										map_name: self.changeTracker.getMapName(),
+										point_name: newLabel
+									});
+									self.hasPointService.callService(request, function (result) {
+										if (!result.result) {
+											self.changeTracker.applyPointChange("rename", target.textContent, 
+													undefined, undefined, newLabel);
+											target.textContent = newLabel;
+										} else {
+											showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+												"The name \"" + newLabel + "\" already exists!");
+										}
+									});
+								} else {
+									self.changeTracker.applyPointChange("rename", target.textContent, 
+													undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								}
 							} else if (labelType === "pose_line_annotation" && !self.changeTracker.hasPose(newLabel)) {
-								// check if the pose already exists in the database
-								let request = new ROSLIB.ServiceRequest({
-									map_name: self.changeTracker.getMapName(),
-									pose_name: newLabel
-								});
-								self.hasPoseService.callService(request, function (result) {
-									if (!result.result) {
-										self.changeTracker.applyPoseChange("rename", target.textContent,
-											undefined, undefined, undefined, newLabel);
-										target.textContent = newLabel;
-									} else {
-										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-											"The name \"" + newLabel + "\" already exists!");
-									}
-								});
+								if (self.dbConnected()) {
+									// check if the pose already exists in the database
+									let request = new ROSLIB.ServiceRequest({
+										map_name: self.changeTracker.getMapName(),
+										pose_name: newLabel
+									});
+									self.hasPoseService.callService(request, function (result) {
+										if (!result.result) {
+											self.changeTracker.applyPoseChange("rename", target.textContent,
+												undefined, undefined, undefined, newLabel);
+											target.textContent = newLabel;
+										} else {
+											showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+												"The name \"" + newLabel + "\" already exists!");
+										}
+									});
+								} else {
+									self.changeTracker.applyPoseChange("rename", target.textContent,
+												undefined, undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								}
 							} else if (labelType === "region_annotation" && !self.changeTracker.hasRegion(newLabel)) {
-								// check if the region already exists in the database
-								let request = new ROSLIB.ServiceRequest({
-									map_name: self.changeTracker.getMapName(),
-									region_name: newLabel
-								});
-								self.hasRegionService.callService(request, function (result) {
-									if (!result.result) {
-										self.changeTracker.applyRegionChange("rename", target.textContent,
-											undefined, undefined, undefined, newLabel);
-										target.textContent = newLabel;
-									} else {
-										showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
-											"The name \"" + newLabel + "\" already exists!");
-									}
-								});		
+								if (self.dbConnected()) {
+									// check if the region already exists in the database
+									let request = new ROSLIB.ServiceRequest({
+										map_name: self.changeTracker.getMapName(),
+										region_name: newLabel
+									});
+									self.hasRegionService.callService(request, function (result) {
+										if (!result.result) {
+											self.changeTracker.applyRegionChange("rename", target.textContent,
+												undefined, undefined, undefined, newLabel);
+											target.textContent = newLabel;
+										} else {
+											showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
+												"The name \"" + newLabel + "\" already exists!");
+										}
+									});
+								} else {
+									self.changeTracker.applyRegionChange("rename", target.textContent,
+												undefined, undefined, undefined, newLabel);
+									target.textContent = newLabel;
+								}
 							} else {
 								showPopup(self.helpPopup, self.helpPopupContent, self.disableDiv,
 									"The name \"" + newLabel + "\" already exists!");
@@ -303,6 +320,10 @@ class Selector {
 				}
 			}
 		});
+	}
+
+	dbConnected() {
+		return window.document.getElementById("connectDb").innerText === "Disconnect from Database";
 	}
 
 	enterShapeDeleteMode(typeToDelete) {
@@ -343,7 +364,7 @@ class Selector {
 	}
 
 	exitEndpointDeleteMode() {
-		this.inEndpointDeleteMode = false
+		this.inEndpointDeleteMode = false;
 	}
 
 	getSelectedRegion() {
