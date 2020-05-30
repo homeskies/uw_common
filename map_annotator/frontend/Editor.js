@@ -154,7 +154,7 @@ class Editor {
 	}
 
 	deleteElement(element) {
-		this.svg.removeChild(element);
+		document.querySelector(".svg-pan-zoom_viewport").removeChild(element);
 	}
 
 	deleteElementOfGroup(g, element) {
@@ -175,6 +175,7 @@ class Editor {
 	clear() {
 		if (this.panZoomStage) {
 			this.panZoomStage.destroy();
+			this.panZoomStage = null;
 		}
 		this.pan = {x: 0, y: 0};
 		this.zoom = 1;
