@@ -23,6 +23,11 @@ class Editor {
 		return this.isReady;
 	}
 
+	getOffset() {
+		let svgDomRect = this.svg.getBoundingClientRect();
+		return {x: svgDomRect["left"], y: svgDomRect["top"]};
+	}
+
 	getMidpointX() {
 		return this.pixelWidth / 2;
 	}
@@ -44,29 +49,7 @@ class Editor {
 	}
 
 	getUnzoomedLength(zoomedLength) {
-		return zoomedLength / this.zoom;
-	}
-
-	getUntransformedPixelX(transformedX) {
-		console.log("prev: " + transformedX);
-		let x = (transformedX - this.pan.x) / this.zoom;
-		console.log("curr: " + x);
-		return (transformedX - this.pan.x) / this.zoom;
-	}
-
-	getTransformedPixelX(untransformedX) {
-		console.log("prev: " + untransformedX);
-		let x = untransformedX * this.zoom + this.pan.x;
-		console.log("curr: " + x);
-		return untransformedX * this.zoom + this.pan.x;
-	}
-
-	getUntransformedPixelY(transformedY) {
-		return (transformedY - this.pan.y) / this.zoom;
-	}
-
-	getTransformedPixelY(untransformedY) {
-		return untransformedY * this.zoom + this.pan.y;
+		return zoomedLength / this.panZoomStage.getZoom();
 	}
 
 	setYAML(yamlFileContent) {
@@ -135,14 +118,14 @@ class Editor {
 			controlIconsEnabled: true,
 			panEnabled: false,		
 			onZoom: function(newZoom) {
-				console.log("ZOOM: " + newZoom);
-				this.zoom = newZoom;
+				// self.zoom = newZoom;
 				document.getElementById("selection").style.display = "none";
+				console.log("ZOOM: " + newZoom);
 			}, 
 			onPan: function(newPan) {
 				console.log("PAN: " + newPan.x + ", " + newPan.y);
-				this.pan.x = newPan.x;
-				this.pan.y = newPan.y;
+				// self.pan.x = newPan.x;
+				// self.pan.y = newPan.y;
 				document.getElementById("selection").style.display = "none";
 			}}
 		);
