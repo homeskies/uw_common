@@ -4,18 +4,19 @@ $(function() {
     const NS = 'http://www.w3.org/2000/svg';
     const HIGHLIGHT = "#ffc30b";
     const WHITE = "#ffffff";
+    const DARK_GREY = "#666666";
     const RED = "#f10000";
     const BLUE = "#4c4cff";
     const YELLOW = "#ffd700";
     const DARK_YELLOW = "#998100";
     const GREEN = "#a7c44c";
-    const LABEL_FONT_SIZE = "15px";
-
-    const CIRCLE_RADIUS = 3.5;
-    const LINE_WIDTH = 4;
+    
+    let circleRadius = 3.5;
+    let lineWidth = 4;
     const LINE_LENGTH = 25;
     const INITIAL_REGION_SIZE = 50;
-    const LABEL_PADDING = 25;
+    const LABEL_PADDING = 20;
+    const LABEL_FONT_SIZE = "10px";
 
     const UNIT_VECTOR = new ROSLIB.Vector3({x: 0, y: 1, z: 0});
 
@@ -166,6 +167,7 @@ $(function() {
                 reader.addEventListener('load', function (event) {
                     self.editor.clear();
                     self.changeTracker.reset();
+                    self.stage.style.borderColor = WHITE;
                     // read YAML file
                     let contents = event.target.result;
                     // parse YAML file content to JSON
@@ -189,6 +191,7 @@ $(function() {
                     setEditorButtonStatus(false);
                     self.loadYaml.style.display = "inline-block";
                     self.loadImage.style.display = "none";
+                    self.stage.style.borderColor = DARK_GREY;
                     if (fileSuffix === 'svg') {  // file uploaded is SVG
                         let reader = new FileReader();
                         reader.addEventListener('load', function (event) {
@@ -312,6 +315,19 @@ $(function() {
             }
         });
 
+        this.addShapeBtn.addEventListener('mouseover', function () {
+            // show tooltip
+            if (selectedShape === "Pose") {
+                showTooltip("add", "Press \"SHIFT\" and click & drag to change orientation.");
+            } else if (selectedShape === "Region"){
+                showTooltip("add", "Click this button to add regions,</br>click on the region to edit it.");
+            }
+        });
+
+        this.addShapeBtn.addEventListener('mouseout', function () {
+            hideTooltip("add");
+        });
+
         this.deleteShapeBtn.addEventListener('click', function () {
             if (this.innerHTML === "Delete") {
                 // delete the selected shape
@@ -320,13 +336,10 @@ $(function() {
                 self.addShapeBtn.disabled = true;
                 self.shapeTypeBtn.disabled = true;
                 if (selectedShape === "Point") {
-                    showHelpPopup("Click on the point you want to delete.");
                     self.selector.enterShapeDeleteMode("circle_annotation");
                 } else if (selectedShape === "Pose") {
-                    showHelpPopup("Click on the pose you want to delete.");
                     self.selector.enterShapeDeleteMode("pose_line_annotation");
                 } else {  // Region
-                    showHelpPopup("Click on the region you want to delete.");
                     self.selector.enterShapeDeleteMode("region_annotation");
                 }
             } else {
@@ -337,6 +350,22 @@ $(function() {
                 self.shapeTypeBtn.disabled = false;
                 unusedRegionId = unusedRegionId.concat(self.selector.exitShapeDeleteMode());
             }
+        });
+
+        this.deleteShapeBtn.addEventListener('mouseover', function () {
+            if (this.innerHTML === "Delete") {
+                if (selectedShape === "Point") {
+                    showTooltip("delete", "Click on the point you want to delete.");
+                } else if (selectedShape === "Pose") {
+                    showTooltip("delete", "Click on the pose you want to delete.");
+                } else {  // Region
+                    showTooltip("delete", "Click on the region you want to delete.");
+                }
+            }
+        });
+
+        this.deleteShapeBtn.addEventListener('mouseout', function () {
+            hideTooltip("delete");
         });
 
         this.addEndpoint.addEventListener('click', function() {
@@ -363,7 +392,6 @@ $(function() {
 
         this.deleteEndpoint.addEventListener('click', function() {
             if (this.innerHTML === "Delete Endpoint") {
-                showHelpPopup("Press \"SHIFT\" and click on the endpoint to delete it.");
                 // delete the selected endpoint
                 this.innerHTML = "DONE";
                 this.style.backgroundColor = HIGHLIGHT;
@@ -380,9 +408,31 @@ $(function() {
             }
         });
 
+        this.deleteEndpoint.addEventListener('mouseover', function() {
+            if (this.innerHTML === "Delete Endpoint") {
+                showTooltip("deleteEndpoint", "Press \"SHIFT\" and click on the endpoint</br>to delete it.");
+            }
+        });
+
+        this.deleteEndpoint.addEventListener('mouseout', function () {
+            hideTooltip("deleteEndpoint");
+        });
+
         this.exitRegionEditor.addEventListener('click', function() {
             self.selector.exitRegionEditor();
         });
+
+        document.getElementById("circleRadiusSlider").oninput = function() {
+            // update circle radius
+            circleRadius = this.value;
+            self.editor.resizeCircles(circleRadius);
+        }
+
+        document.getElementById("strokeWidthSlider").oninput = function() {
+            // update line width
+            lineWidth = this.value;
+            self.editor.resizeLines(lineWidth);
+        }
     });
 
     function addPoint() {
@@ -477,6 +527,7 @@ $(function() {
         self.loadYaml.style.display = "inline-block";
         self.loadImage.style.display = "none";
         self.yamlUploaded = false;
+        self.stage.style.borderColor = WHITE;
     }
 
     function displayRobotPosition(msg) {
@@ -538,7 +589,6 @@ $(function() {
     }
 
     function addPoseWithName(labelName) {
-        showHelpPopup("Press \"SHIFT\" and click & drag to change orientation.");
         let poseGroup = document.createElementNS(NS, 'g');
         let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
         poseGroup.appendChild(label);
@@ -555,7 +605,6 @@ $(function() {
     }
 
     function addRegionWithName(labelName) {
-        showHelpPopup("Click \"Add\" button to add regions, click on the region to edit it");
         let regionId;
         if (unusedRegionId.length > 0) {
             regionId = unusedRegionId.pop();
@@ -575,7 +624,7 @@ $(function() {
         basicRegion.setAttribute('points', convertToString(points));
         basicRegion.style.fill = 'transparent';
         basicRegion.style.stroke = YELLOW;
-        basicRegion.style.strokeWidth = LINE_WIDTH;
+        basicRegion.style.strokeWidth = lineWidth;
         regionGroup.appendChild(basicRegion);
         // mark end points with circles
         for (let i = 0; i < points.length; i++) {
@@ -609,7 +658,7 @@ $(function() {
         circle.setAttribute('class', className);
         circle.setAttribute('cx', cx);
         circle.setAttribute('cy', cy);
-        circle.setAttribute('r', CIRCLE_RADIUS);
+        circle.setAttribute('r', circleRadius);
         circle.style.stroke = color;
         circle.style.fill = color;
         return circle;
@@ -646,7 +695,7 @@ $(function() {
         arrowline.setAttribute('y2', y2);
         arrowline.setAttribute('marker-end', "url(#arrowhead" + arrowMarkerId + ")");
         arrowline.style.stroke = color;
-        arrowline.style.strokeWidth = LINE_WIDTH;
+        arrowline.style.strokeWidth = lineWidth;
         return arrowline;
     }
 
@@ -764,6 +813,15 @@ $(function() {
     function resetAfterSaving() {
         self.prevName = title.value;
         self.changeTracker.reset();
+    }
+
+    function showTooltip(type, text) {
+        document.getElementById(type + "Tooltip").style.visibility = "visible";
+        document.getElementById(type + "Tooltip").innerHTML = text;
+    }
+
+    function hideTooltip(type) {
+        document.getElementById(type + "Tooltip").style.visibility = "hidden";
     }
 
     function showHelpPopup(content) {

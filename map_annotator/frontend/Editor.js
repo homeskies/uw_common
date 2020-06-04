@@ -79,8 +79,7 @@ class Editor {
 			let currentLine = lines[i];
 			if (!currentLine.startsWith("#")) {
 				lineProcessed++;
-				if (lineProcessed === 2) {
-					// update image dimension
+				if (lineProcessed === 2) {  // update image dimension
 					this.setDimension(currentLine.split(" ")[0], currentLine.split(" ")[1]);
 				}
 			}
@@ -113,14 +112,15 @@ class Editor {
 		this.svg.appendChild(svgImg);
 
 		this.isReady = true;
-
 		this.enablePanZoom();
+
+		// TODO: zoom the image to fit
 	}
 
 	enablePanZoom() {
         this.panZoomStage = svgPanZoom("#stage", {
 			controlIconsEnabled: true,
-			panEnabled: false,		
+			panEnabled: false,
 			onZoom: function(newZoom) {
 				document.getElementById("selection").style.display = "none";
 			}, 
@@ -141,6 +141,20 @@ class Editor {
 
 	deleteElementOfGroup(g, element) {
 		g.removeChild(element);
+	}
+
+	resizeCircles(newRadius) {
+		let circles = document.querySelectorAll("circle");
+		for (let i = 0; i < circles.length; i++) {
+			circles[i].setAttribute('r', newRadius);
+		}
+	}
+
+	resizeLines(newWidth) {
+		let lines = document.querySelectorAll("line, polygon");
+		for (let i = 0; i < lines.length; i++) {
+			lines[i].style.strokeWidth = newWidth;
+		}
 	}
 
 	cloneStage() {
@@ -196,8 +210,12 @@ class Editor {
 		this.pixelWidth = pixelWidth;
 		this.pixelHeight = pixelHeight;
 		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin.y) / this.resolution) * this.resolution;
-		this.svg.setAttribute("width", this.pixelWidth);
-		this.svg.setAttribute("height", this.pixelHeight);
-		this.svg.setAttribute("viewBox", "0 0 " + this.pixelWidth + " " + this.pixelHeight);
+		// adjust the size of svg area so that the image won't appear too small or too large
+		let scale = Math.min((0.75 * window.innerWidth) / this.pixelWidth, (0.6 * window.innerHeight) / this.pixelHeight);
+		let displayWidth = this.pixelWidth * scale;
+		let displayHeight = this.pixelHeight * scale;
+		this.svg.setAttribute("width", displayWidth);
+		this.svg.setAttribute("height", displayHeight);
+		this.svg.setAttribute("viewBox", "0 0 " + displayWidth + " " + displayHeight);
 	}
 }

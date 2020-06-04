@@ -77,17 +77,28 @@
                 </div>
             </div>
             <button id="add" class="editorBtn">Add</button>
+            <span id="addTooltip" class="tooltip" style="visibility:hidden"></span>
             <button id="delete" class="editorBtn">Delete</button>
+            <span id="deleteTooltip" class="tooltip" style="visibility:hidden"></span>
         </div>
         <div id="regionShapeBtns" style="visibility:hidden">
             <button id="addEndpoint" class="editorBtn regionShapeBtn">Add Endpoint</button>
             <button id="deleteEndpoint" class="editorBtn regionShapeBtn">Delete Endpoint</button>
+            <span id="deleteEndpointTooltip" class="tooltip" style="visibility:hidden"></span>
             <button id="exitRegionEditor" class="editorBtn regionShapeBtn">EXIT</button>
         </div>
     </div>
-    <div id="content">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="stage" preserveAspectRatio="xMidYMid meet"></svg>
-        <canvas id="canvas" style="visibility:hidden"></canvas>
+    <div id="editor">
+        <div id="content">
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="stage" preserveAspectRatio="xMidYMid meet"></svg>
+            <canvas id="canvas" style="visibility:hidden"></canvas>
+        </div>
+        <div id="slideContainer">
+            <p>Circle radius:</p>
+            <input id="circleRadiusSlider" class="editorBtn" type="range" min="1" max="8" value="3.5">
+            <p>Stroke width:</p>
+            <input id="strokeWidthSlider" class="editorBtn" type="range" min="1" max="8" value="4">
+        </div>
     </div>
 
     <div id="disableDiv"></div>

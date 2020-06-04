@@ -12,6 +12,10 @@ body {
     z-index: -1;
 }
 
+#stage {
+    border: 3px solid #fff;
+}
+
 button {
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
@@ -81,6 +85,7 @@ button.disabled {
 
 #title {
     width: 40%;
+    margin-bottom: 0.5em;
 }
 
 input {
@@ -90,6 +95,21 @@ input {
 
 #shapeBtns, #fileBtns {
     margin: 0.5em;
+}
+
+#shapeBtns, #regionShapeBtns {
+    position: relative;
+}
+
+.tooltip {
+    background-color: #666666;
+    position: absolute;
+    z-index: 2;
+    padding: 0.7em;
+    top: 1.5em;
+    border-radius: 1em;
+    color: white;
+    opacity: 0.8;
 }
 
 #connectDb, #manageDb, #fileBtns button:enabled {
@@ -214,7 +234,19 @@ input {
     line-height: 1em;
 }
 
-@media only screen and (max-width: 600px) {
+/* Slider */
+#editor {
+    position: relative;
+}
+
+#slideContainer {
+    width: 15%;
+    position: absolute;
+    right: 1em;
+}
+
+
+@media only screen and (max-width: 900px) {
     body {
         background-color: #9173e5;
     }
@@ -229,7 +261,7 @@ input {
         color: white;
     }
 
-    #tools, #content {
+    #tools, #editor {
         display: none;
     }
 }
