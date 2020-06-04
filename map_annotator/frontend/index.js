@@ -281,9 +281,9 @@ $(function() {
 
         // CLEAR
         clear.addEventListener('click', function () {
-            let clearConfirm = confirm("Are you sure you want to DISCARD the changes?");
+            let clearConfirm = confirm("Are you sure you want to DISCARD all the annotations?");
             if (clearConfirm === true) {
-                clearEditor();
+                clearAnnotations();
             }
         });
 
@@ -461,6 +461,11 @@ $(function() {
                 showHelpPopup("The region named \"" + labelName + "\" already exists!");
             }
         }
+    }
+
+    function clearAnnotations() {
+        self.editor.clearAnnotations();
+        self.changeTracker.reset();
     }
 
     function clearEditor() {

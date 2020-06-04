@@ -8,10 +8,7 @@ class Editor {
 		this.origin = {x: 0, y: 0};
 		this.mapOriginY = 0;
 		this.isReady = false;
-		// pan & zoom variables
 		this.panZoomStage = null;
-		this.pan = {x: 0, y: 0};
-		this.zoom = 1;
 	}
 
 	setup(svg, canvas) {
@@ -50,6 +47,13 @@ class Editor {
 
 	getUnzoomedLength(zoomedLength) {
 		return zoomedLength / this.panZoomStage.getZoom();
+	}
+
+	getTransformedCoordinate(x, y) {
+		let m = getTransformMatrix(document.querySelector(".svg-pan-zoom_viewport").getAttribute('transform'));
+		let transformedX = m[0] * x + m[2] * y + m[4];
+		let transformedY = m[1] * x + m[3] * y + m[5];
+		return [transformedX, transformedY];
 	}
 
 	setYAML(yamlFileContent) {
@@ -118,14 +122,9 @@ class Editor {
 			controlIconsEnabled: true,
 			panEnabled: false,		
 			onZoom: function(newZoom) {
-				// self.zoom = newZoom;
 				document.getElementById("selection").style.display = "none";
-				console.log("ZOOM: " + newZoom);
 			}, 
 			onPan: function(newPan) {
-				console.log("PAN: " + newPan.x + ", " + newPan.y);
-				// self.pan.x = newPan.x;
-				// self.pan.y = newPan.y;
 				document.getElementById("selection").style.display = "none";
 			}}
 		);
@@ -155,13 +154,19 @@ class Editor {
 		return clone;
 	}
 
+	clearAnnotations() {
+		let svgContent = document.querySelector(".svg-pan-zoom_viewport");
+		let svgChildNodes = svgContent.childNodes;
+		for (let i = 1; i < svgChildNodes.length; i++) {
+			svgContent.removeChild(svgChildNodes[i]);
+		}
+	}
+
 	clear() {
 		if (this.panZoomStage) {
 			this.panZoomStage.destroy();
 			this.panZoomStage = null;
 		}
-		this.pan = {x: 0, y: 0};
-		this.zoom = 1;
 		if (this.svg) {
 			this.svg.textContent = "";
 		}

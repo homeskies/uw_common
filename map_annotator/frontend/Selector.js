@@ -30,8 +30,6 @@ class Selector {
 		this.selectedRegion = null;
 		this.deletedRegionIds = [];
 		let angleOffset = 0;  // angle offset for pose orientation (in radians)
-		let regionReferencePoint = { x: 0, y: 0 };
-		let regionOffset = { x: 0, y: 0 };
 
 		function updateSelection(element) {
 			if (element.isSameNode(stage) || element.getAttribute('id') === "background_img" || 
@@ -80,8 +78,8 @@ class Selector {
 				let y1 = target.getAttribute('y1');
 				let x2 = target.getAttribute('x2');
 				let y2 = target.getAttribute('y2');
-				let angle = Math.atan2(y2 - y1, x2 - x1);
-				displayPoseInfo(x1, y1, angle);
+				angleOffset = Math.atan2(y2 - y1, x2 - x1);
+				displayPoseInfo(x1, y1, angleOffset);
 			} else if (targetType === 'region_endpoint_annotation') {
 				let translate = getTranslate(target.parentElement.getAttribute('transform'));
 				let translatedX = parseFloat(target.getAttribute('cx')) + translate[0];
@@ -104,22 +102,6 @@ class Selector {
 				if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 					angleOffset = Math.atan2(target.getAttribute('y2') - target.getAttribute('y1'), 
 											 target.getAttribute('x2') - target.getAttribute('x1'));
-				} else if (targetType === 'region_annotation') {
-					// let referenceGroup = target.parentElement;
-					// let referencePointElement = referenceGroup.childNodes[2];
-					// let translate = getTranslate(referenceGroup.getAttribute('transform'));
-					// regionReferencePoint.x = parseFloat(referencePointElement.getAttribute('cx'));
-					// regionReferencePoint.y = parseFloat(referencePointElement.getAttribute('cy'));
-					// offset.x = regionReferencePoint.x + translate[0] - event.offsetX;
-					// offset.y = regionReferencePoint.y + translate[1] - event.offsetY;
-					// let referenceGroup = target.parentElement;
-					// let referencePointElement = referenceGroup.childNodes[2];
-					// let translate = getTranslate(referenceGroup.getAttribute('transform'));
-					// regionReferencePoint.x = parseFloat(referencePointElement.getAttribute('cx'));
-					// regionReferencePoint.y = parseFloat(referencePointElement.getAttribute('cy'));
-					// regionOffset.x = regionReferencePoint.x + translate[0] - event.offsetX;
-					// regionOffset.y = regionReferencePoint.y + translate[1] - event.offsetY;
-					// console.log(regionOffset);
 				}
 				self.selected = target;
 			}
@@ -154,8 +136,8 @@ class Selector {
 						displayPoseInfo(newOffset.x, newOffset.y, angleOffset);
 						self.changeTracker.applyPoseChange("save", label.textContent, newOffset.x, newOffset.y, angleOffset);
 					} else {  // shift key pressed, change the arrow orientation
-
-						angleOffset = Math.atan2(event.offsetY - y1, event.offsetX - x1);
+						let transformedPoint = self.editor.getTransformedCoordinate(x1, y1);
+						angleOffset = Math.atan2(self.offset.y - transformedPoint[1], self.offset.x - transformedPoint[0]);
 						self.selected.setAttribute('x2', x1 + lineLength * Math.cos(angleOffset));
 						self.selected.setAttribute('y2', y1 + lineLength * Math.sin(angleOffset));
 						displayPoseInfo(x1, y1, angleOffset);
@@ -165,20 +147,13 @@ class Selector {
 					let regionGroup = self.selected.parentElement;
 					let referencePointElement = regionGroup.childNodes[2];
 					let translate = getTranslate(regionGroup.getAttribute('transform'));
-					// regionReferencePoint.x = parseFloat(referencePointElement.getAttribute('cx'));
-					// regionReferencePoint.y = parseFloat(referencePointElement.getAttribute('cy'));
-					
-					let oldX = parseFloat(referencePointElement.getAttribute('cx')) + translate[0];
-					let oldY = parseFloat(referencePointElement.getAttribute('cy')) + translate[1];
-
-					let newOffset = self.calculateNewOffset(oldX, oldY, event.offsetX, event.offsetY);
-
-					let newTranslateX = newOffset.x - parseFloat(referencePointElement.getAttribute('cx'));
-					let newTranslateY = newOffset.y - parseFloat(referencePointElement.getAttribute('cy'));
-
-					console.log(newTranslateX + ", " + newTranslateY);
-					//
-
+					let oldUntransformedX = parseFloat(referencePointElement.getAttribute('cx'));
+					let oldUntransformedY = parseFloat(referencePointElement.getAttribute('cy'));
+					let newOffset = self.calculateNewOffset(
+							oldUntransformedX + translate[0], oldUntransformedY + translate[1], 
+							event.offsetX, event.offsetY);
+					let newTranslateX = newOffset.x - oldUntransformedX;
+					let newTranslateY = newOffset.y - oldUntransformedY;
 					regionGroup.setAttribute('transform', 'translate(' + newTranslateX + ',' + newTranslateY + ')');
 					// always update the list of points and translate
 					let currentRegion = regionGroup.childNodes[1];
@@ -415,6 +390,6 @@ class Selector {
 		let unzoomedDistance = this.editor.getUnzoomedLength(Math.sqrt(Math.pow(y, 2) + Math.pow(x, 2)));
 		let newOffsetX = oldX + unzoomedDistance * Math.cos(angle);
 		let newOffsetY = oldY + unzoomedDistance * Math.sin(angle);
-		return {x: newOffsetX, y: newOffsetY};
+		return {x: newOffsetX, y: newOffsetY, angle: angle};
 	}
 }

@@ -23,11 +23,22 @@ function getRandomInteger(min, max) {
     return Math.floor(Math.random() * (max - min)) + min;
 }
 
+function getTransformMatrix(transformMatrixStr) {
+    // return the transform matrix as a list
+    let transformMatrix = transformMatrixStr.substring(7, transformMatrixStr.length - 1);
+    let transformMatrixArr = transformMatrix.split(",");
+    let result = [];
+    for (let i = 0; i < transformMatrixArr.length; i++) {
+        result.push(parseFloat(transformMatrixArr[i]));
+    }
+    return result;
+}
+
 function getTranslate(translateStr) {
     // return the translate in the form of: [x, y]
     let translate = translateStr.substring(10, translateStr.length - 1);
     let translateArr = translate.split(",");
-    return [parseInt(translateArr[0]), parseInt(translateArr[1])];
+    return [parseFloat(translateArr[0]), parseFloat(translateArr[1])];
 }
 
 function getRegionId(selectedRegion) {
