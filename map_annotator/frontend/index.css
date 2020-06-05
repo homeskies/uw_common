@@ -239,13 +239,13 @@ input {
     position: relative;
 }
 
-#slideContainer {
+#sideCtrlPanelContainer {
     width: 15%;
     position: absolute;
     right: 1em;
 }
 
-#panSwitchBtn {
+#panZoomCtrlContainer {
     margin-top: 5em;
 }
 

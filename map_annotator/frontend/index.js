@@ -435,6 +435,10 @@ $(function() {
             self.editor.resizeLines(lineWidth);
         }
 
+        document.getElementById("fillBtn").addEventListener('click', function() {
+            self.editor.fill();
+        });
+
         document.getElementById("panSwitchBtn").addEventListener('click', function() {
             if (this.innerHTML === "Pan OFF") {  // turn on pan
                 self.editor.enablePan();

@@ -10,6 +10,9 @@ class Editor {
 		this.isReady = false;
 		this.panZoomStage = null;
 		this.isPanEnabled = false;
+		// zoom and pan scale to make the image fill the editor canvas
+		this.scaleToFill = 1;
+		this.panToFill = {x: 0, y: 0};
 	}
 
 	setup(svg, canvas) {
@@ -67,7 +70,6 @@ class Editor {
 		this.setDimension(svgFileContent.documentElement.viewBox.baseVal.width, svgFileContent.documentElement.viewBox.baseVal.height);
 		this.svg.innerHTML = svgFileContent.documentElement.innerHTML;
 		this.isReady = true;
-
 		this.enablePanZoom();
 	}
 
@@ -114,13 +116,12 @@ class Editor {
 
 		this.isReady = true;
 		this.enablePanZoom();
-
-		// TODO: zoom the image to fit
 	}
 
 	enablePanZoom() {
         this.panZoomStage = svgPanZoom("#stage", {
-			controlIconsEnabled: true,
+			// uncomment this to enable built-in zoom control buttons
+			// controlIconsEnabled: true,
 			panEnabled: false,
 			onZoom: function(newZoom) {
 				document.getElementById("selection").style.display = "none";
@@ -130,6 +131,16 @@ class Editor {
 			}}
 		);
 		this.disablePan();
+		this.fill();
+	}
+
+	fill() {
+		// zoom and pan the image to fill the editor canvas
+		if (this.panZoomStage) {
+			this.panZoomStage.reset();
+			this.panZoomStage.pan({x: this.panToFill.x, y: this.panToFill.y});
+			this.panZoomStage.zoomBy(this.scaleToFill);
+		}
 	}
 
 	isEditorPanEnabled() {
@@ -180,14 +191,8 @@ class Editor {
 	}
 
 	cloneStage() {
-		// reset current pan zoom, and remove all the pan zoom node from svg node
-		this.panZoomStage.reset();
-		this.panZoomStage.destroy();
 		// create a clone of the current svg
-		let clone = this.svg.cloneNode(true);
-		// restart pan zoom
-		this.enablePanZoom();
-		return clone;
+		return this.svg.cloneNode(true);
 	}
 
 	clearAnnotations() {
@@ -214,18 +219,21 @@ class Editor {
 		this.origin = {x: 0, y: 0};
 		this.mapOriginY = 0;
 		this.isReady = false;
+		this.scaleToFill = 1;
+		this.panToFill = {x: 0, y: 0};
 		document.getElementById("selection").style.display = "none";
 	}
 
 	toString(svg) {
-		return [
+		let tag = [
 			'<?xml version="1.0" encoding="UTF-8"?>\n',
 			'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="xMidYMid meet" ',
 			'width="' + this.pixelWidth + '" height="' + this.pixelHeight + '" ',
-			'viewBox="0 0 ' + this.pixelWidth + ' ' + this.pixelHeight + '\">\n',
-			svg.innerHTML,
-			'</svg>'
+			'viewBox="0 0 ' + this.pixelWidth + ' ' + this.pixelHeight + '\">\n'
 		].join('');
+		// remove all the pan zoom code from svg, only save the background image and annotations
+		let content = svg.querySelector(".svg-pan-zoom_viewport").innerHTML;
+		return tag + content + '</svg>';
 	}
 
 	setDimension(pixelWidth, pixelHeight) {
@@ -233,9 +241,11 @@ class Editor {
 		this.pixelHeight = pixelHeight;
 		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin.y) / this.resolution) * this.resolution;
 		// adjust the size of svg area so that the image won't appear too small or too large
-		let scale = Math.min((0.75 * window.innerWidth) / this.pixelWidth, (0.6 * window.innerHeight) / this.pixelHeight);
-		let displayWidth = this.pixelWidth * scale;
-		let displayHeight = this.pixelHeight * scale;
+		this.scaleToFill = Math.min((0.75 * window.innerWidth) / this.pixelWidth, (0.6 * window.innerHeight) / this.pixelHeight);
+		let displayWidth = this.pixelWidth * this.scaleToFill;
+		let displayHeight = this.pixelHeight * this.scaleToFill;
+		this.panToFill.x = (displayWidth / 2) - (this.pixelWidth / 2);
+		this.panToFill.y = (displayHeight / 2) - (this.pixelHeight / 2);
 		this.svg.setAttribute("width", displayWidth);
 		this.svg.setAttribute("height", displayHeight);
 		this.svg.setAttribute("viewBox", "0 0 " + displayWidth + " " + displayHeight);

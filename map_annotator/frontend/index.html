@@ -93,12 +93,15 @@
             <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="stage" preserveAspectRatio="xMidYMid meet"></svg>
             <canvas id="canvas" style="visibility:hidden"></canvas>
         </div>
-        <div id="slideContainer">
+        <div id="sideCtrlPanelContainer">
             <p>Circle Radius:</p>
             <input id="circleRadiusSlider" class="editorBtn" type="range" min="1" max="8" value="3.5">
             <p>Stroke Width:</p>
             <input id="strokeWidthSlider" class="editorBtn" type="range" min="1" max="8" value="3.5">
-            <button id="panSwitchBtn" class="editorBtn">Pan OFF</button>
+            <div id="panZoomCtrlContainer">
+                <button id="fillBtn" class="editorBtn">Fill</button>
+                <button id="panSwitchBtn" class="editorBtn">Pan OFF</button>
+            </div>
         </div>
     </div>
 
