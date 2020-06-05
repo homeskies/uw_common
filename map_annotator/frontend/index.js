@@ -247,7 +247,7 @@ $(function() {
                 // remove the robot pose from the cloned SVG
                 let robotPoseElement = clone.getElementById("robotPose");
                 if (robotPoseElement) {
-                    clone.removeChild(robotPoseElement);
+                    clone.querySelector(".svg-pan-zoom_viewport").removeChild(robotPoseElement);
                 }
                 // download SVG
                 let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });

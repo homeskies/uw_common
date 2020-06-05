@@ -4,7 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from tf.transformations import euler_from_quaternion
 from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse, HasPoint, HasPointResponse, HasPose, HasPoseResponse, HasRegion, HasRegionResponse
-from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region, RobotPose
+from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region
 import knowledge_representation
 import copy
 
