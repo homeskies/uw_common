@@ -94,21 +94,23 @@ class Selector {
 
 		// DRAG & DROP
 		stage.addEventListener('mousedown', function (event) {
-			let target = event.target;
-			let targetType = target.getAttribute('class');
-			if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
-				self.offset.x = event.offsetX;
-				self.offset.y = event.offsetY;
-				if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
-					angleOffset = Math.atan2(target.getAttribute('y2') - target.getAttribute('y1'), 
-											 target.getAttribute('x2') - target.getAttribute('x1'));
+			if (!self.isPanEnabled()) {
+				let target = event.target;
+				let targetType = target.getAttribute('class');
+				if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
+					self.offset.x = event.offsetX;
+					self.offset.y = event.offsetY;
+					if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
+						angleOffset = Math.atan2(target.getAttribute('y2') - target.getAttribute('y1'), 
+												 target.getAttribute('x2') - target.getAttribute('x1'));
+					}
+					self.selected = target;
 				}
-				self.selected = target;
 			}
 		});
 
 		window.addEventListener('mousemove', function (event) {
-			if (self.selected) {
+			if (!self.isPanEnabled() && self.selected) {
 				let targetType = self.selected.getAttribute('class');
 				let label = getLabelElement(self.selected);
 				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
@@ -325,6 +327,10 @@ class Selector {
 
 	dbConnected() {
 		return window.document.getElementById("connectDb").innerText === "Disconnect from Database";
+	}
+
+	isPanEnabled() {
+		return this.editor && this.editor.isEditorPanEnabled();
 	}
 
 	enterShapeDeleteMode(typeToDelete) {

@@ -245,6 +245,10 @@ input {
     right: 1em;
 }
 
+#panSwitchBtn {
+    margin-top: 5em;
+}
+
 
 @media only screen and (max-width: 900px) {
     body {

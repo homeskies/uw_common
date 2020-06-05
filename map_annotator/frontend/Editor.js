@@ -9,6 +9,7 @@ class Editor {
 		this.mapOriginY = 0;
 		this.isReady = false;
 		this.panZoomStage = null;
+		this.isPanEnabled = false;
 	}
 
 	setup(svg, canvas) {
@@ -128,6 +129,27 @@ class Editor {
 				document.getElementById("selection").style.display = "none";
 			}}
 		);
+		this.disablePan();
+	}
+
+	isEditorPanEnabled() {
+		return this.isPanEnabled;
+	}
+
+	enablePan() {
+		if (this.panZoomStage) {
+			this.panZoomStage.enablePan();
+			this.isPanEnabled = true;
+			document.getElementById("panSwitchBtn").innerHTML = "Pan ON";
+		}
+	}
+
+	disablePan() {
+		if (this.panZoomStage) {
+			this.panZoomStage.disablePan();
+			this.isPanEnabled = false;
+			document.getElementById("panSwitchBtn").innerHTML = "Pan OFF";
+		}
 	}
 
 	addElement(element) {

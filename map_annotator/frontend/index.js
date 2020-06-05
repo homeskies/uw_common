@@ -13,7 +13,7 @@ $(function() {
     
     let circleRadius = 3.5;
     let lineWidth = 4;
-    const LINE_LENGTH = 25;
+    const LINE_LENGTH = 18;
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 20;
     const LABEL_FONT_SIZE = "10px";
@@ -180,6 +180,7 @@ $(function() {
                     self.loadYaml.style.display = "none";
                     self.loadImage.style.display = "inline-block";
                     clear.disabled = false;
+                    setEditorButtonStatus(true);
                 });
                 reader.readAsText(file);
                 form.reset();
@@ -433,6 +434,14 @@ $(function() {
             lineWidth = this.value;
             self.editor.resizeLines(lineWidth);
         }
+
+        document.getElementById("panSwitchBtn").addEventListener('click', function() {
+            if (this.innerHTML === "Pan OFF") {  // turn on pan
+                self.editor.enablePan();
+            } else {  // turn off pan
+                self.editor.disablePan();
+            }
+        });
     });
 
     function addPoint() {
@@ -667,17 +676,17 @@ $(function() {
     function makeArrowhead(color) {
         let arrowhead = document.createElementNS(NS, 'polygon');
         arrowhead.style.fill = color;
-        arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
+        arrowhead.setAttribute('points', "0 0,2 1,0 2");
         return arrowhead;
     }
 
     function makeArrowmarker(arrowMarkerId) {
         let arrowmarker = document.createElementNS(NS, 'marker');
         arrowmarker.setAttribute('id', 'arrowhead' + arrowMarkerId);
-        arrowmarker.setAttribute('markerWidth', 3);
-        arrowmarker.setAttribute('markerHeight', 3);
+        arrowmarker.setAttribute('markerWidth', 2);
+        arrowmarker.setAttribute('markerHeight', 2);
         arrowmarker.setAttribute('refX', 0);
-        arrowmarker.setAttribute('refY', 1.5);
+        arrowmarker.setAttribute('refY', 1);
         arrowmarker.setAttribute('orient', "auto");
         return arrowmarker;
     }
