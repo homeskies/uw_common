@@ -181,6 +181,8 @@ $(function() {
                     self.loadImage.style.display = "inline-block";
                     clear.disabled = false;
                     setEditorButtonStatus(true);
+                    // enable clear button
+                    clear.disabled = false;
                 });
                 reader.readAsText(file);
                 form.reset();
@@ -239,8 +241,7 @@ $(function() {
         document.body.appendChild(link);
 
         this.saveBtn.addEventListener('click', function () {
-            let save = confirm("Are you sure you want to SAVE the changes?");
-            if (save === true) {
+            if (confirm("Are you sure you want to SAVE the changes?")) {
                 // create a clone of the SVG node so we don't mess the original one
                 let clone = self.editor.cloneStage();
                 // remove the robot pose from the cloned SVG
@@ -285,8 +286,12 @@ $(function() {
 
         // CLEAR
         clear.addEventListener('click', function () {
-            let clearConfirm = confirm("Are you sure you want to DISCARD all the annotations?");
-            if (clearConfirm === true) {
+            if (self.yamlUploaded) {
+                if (confirm("Are you sure you want to upload a new YAML file?")) {
+                    // clear the uploaded yaml file, let the user to choose a new yaml file to upload
+                    clearEditor();
+                }
+            } else if (confirm("Are you sure you want to DISCARD all the annotations?")) {
                 clearAnnotations();
             }
         });
@@ -753,9 +758,8 @@ $(function() {
     function toggleDbConnection() {
         if (!self.dbConnected) {
             // show a confirmation box, because the editor will be cleared after the switch
-            let connectDbConfirm = confirm("Are you sure you want to CONNECT to database? " +
-                    "The svg editor will be CLEARED after the switch!");
-            if (connectDbConfirm === true) {
+            if (confirm("Are you sure you want to CONNECT to database? " +
+                        "The svg editor will be CLEARED after the switch!")) {
                 if (self.statusBar.innerHTML === "Connected to ROS!") {
                     // connect to database
                     clearEditor();

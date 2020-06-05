@@ -219,7 +219,7 @@ class Selector {
 				} else if (targetType === 'region_annotation') {
 					// edit selected region
 					self.enterRegionEditor(target);
-				} else if (self.inEndpointDeleteMode && event.shiftKey === true && 
+				} else if (self.inEndpointDeleteMode && event.shiftKey && 
 						   targetType === 'region_endpoint_annotation') {
 					// DELETE endpoint
 					let group = target.parentElement;
