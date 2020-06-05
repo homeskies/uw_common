@@ -177,6 +177,12 @@ class Selector {
 					let selectedEndpointId = parseInt(self.selected.getAttribute('id').split("-")[1]);
 					points[selectedEndpointId] = [newOffset.x, newOffset.y];
 					currentRegion.setAttribute('points', convertToString(points));
+					// adjust the region label position so that it's relative to endpoint #0
+					if (selectedEndpointId === 0) {
+						let textLabel = regionGroup.childNodes[0];
+						textLabel.setAttribute('x', newOffset.x);
+						textLabel.setAttribute('y', newOffset.y - labelPadding);
+					}
 					// track change
 					self.changeTracker.moveRegionEndpoint(label.textContent, selectedEndpointId, newOffset.x, newOffset.y);
 					// always update the translate
@@ -226,6 +232,8 @@ class Selector {
 						self.editor.deleteElement(group);
 						self.changeTracker.applyRegionChange("delete", regionName);
 						self.selectedRegion = null;
+						// exit region editing mode
+						self.resetAndExitRegionEditor();
 					} else {  // delete the point
 						self.editor.deleteElementOfGroup(group, target);
 						let selectedEndpointId = parseInt(target.getAttribute('id').split("-")[1]);
@@ -241,6 +249,10 @@ class Selector {
 						// always update the translate
 						let translate = getTranslate(group.getAttribute('transform'));
 						self.changeTracker.applyRegionChange("translate", regionName, points, translate[0], translate[1]);
+						// adjust the region label position so that it's relative to endpoint #0
+						let textLabel = group.childNodes[0];
+						textLabel.setAttribute('x', points[0][0]);
+						textLabel.setAttribute('y', points[0][1] - labelPadding);
 					}
 				} else if (targetType === 'text_annotation') {
 					let labelType = target.parentElement.childNodes[1].getAttribute('class');
@@ -351,10 +363,19 @@ class Selector {
 
 	enterRegionEditor(target) {
 		window.document.getElementById("regionShapeBtns").style.visibility = "visible";
-		$(':button:not(.regionShapeBtn, .popupCloseBtn)').prop('disabled', true);
+		$(':button:not(.regionShapeBtn, .popupCloseBtn, .panZoomBtn)').prop('disabled', true);
 		// highlight the selected region
 		this.highlightRegion(target);		
 	}
+
+	resetAndExitRegionEditor() {
+        document.getElementById("deleteEndpoint").innerHTML = "Delete Endpoint";
+        document.getElementById("deleteEndpoint").style.backgroundColor = "#ffffff";
+        document.getElementById("addEndpoint").disabled = false;
+        document.getElementById("exitRegionEditor").disabled = false;
+		this.exitEndpointDeleteMode();
+		this.exitRegionEditor();
+    }
 
 	exitRegionEditor() {
 		window.document.getElementById("regionShapeBtns").style.visibility = "hidden";

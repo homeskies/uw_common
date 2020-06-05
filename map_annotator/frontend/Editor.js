@@ -151,7 +151,7 @@ class Editor {
 		if (this.panZoomStage) {
 			this.panZoomStage.enablePan();
 			this.isPanEnabled = true;
-			document.getElementById("panSwitchBtn").innerHTML = "Pan ON";
+			document.getElementById("panSwitchBtn").innerHTML = "Pan OFF";
 		}
 	}
 
@@ -159,7 +159,7 @@ class Editor {
 		if (this.panZoomStage) {
 			this.panZoomStage.disablePan();
 			this.isPanEnabled = false;
-			document.getElementById("panSwitchBtn").innerHTML = "Pan OFF";
+			document.getElementById("panSwitchBtn").innerHTML = "Pan ON";
 		}
 	}
 

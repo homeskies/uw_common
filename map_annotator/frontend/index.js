@@ -440,7 +440,7 @@ $(function() {
         });
 
         document.getElementById("panSwitchBtn").addEventListener('click', function() {
-            if (this.innerHTML === "Pan OFF") {  // turn on pan
+            if (this.innerHTML === "Pan ON") {  // turn on pan
                 self.editor.enablePan();
             } else {  // turn off pan
                 self.editor.disablePan();
@@ -627,6 +627,7 @@ $(function() {
         }
         let regionGroup = document.createElementNS(NS, 'g');
         regionGroup.setAttribute("transform", "translate(0, 0)");
+        // the region label position is relative to endpoint #0
         let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
         regionGroup.appendChild(label);
         // add a triangle to start
