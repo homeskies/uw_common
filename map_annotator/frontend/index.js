@@ -323,10 +323,14 @@ $(function() {
 
         this.addShapeBtn.addEventListener('mouseover', function () {
             // show tooltip
-            if (selectedShape === "Pose") {
-                showTooltip("add", "Press \"SHIFT\" and click & drag to change orientation.");
+            if (selectedShape === "Point") {
+                showTooltip("add", "Drag & drop to move the point.</br>Press \"SHIFT\" & drag to move the label.");
+            } else if (selectedShape === "Pose") {
+                showTooltip("add", "Drag & drop to move the pose.</br>Press \"SHIFT\" & drag the pose to change orientation." +
+                            "</br>Press \"SHIFT\" & drag to move the label");
             } else if (selectedShape === "Region"){
-                showTooltip("add", "Click this button to add regions,</br>click on the region to edit it.");
+                showTooltip("add", "Click this button to add regions.</br>Click on the region to edit it." +
+                            "</br>Press \"SHIFT\" & drag to move the label");
             }
         });
 

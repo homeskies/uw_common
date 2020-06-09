@@ -69,7 +69,6 @@ class Selector {
 		// HOVER
 		stage.addEventListener('mouseover', function (event) {
 			let target = event.target;
-			updateSelection(target);
 			let targetType = target.getAttribute('class');
 			if (targetType === 'circle_annotation') {
 				displayCircleInfo(target.getAttribute('cx'), target.getAttribute('cy'));
@@ -86,6 +85,10 @@ class Selector {
 				let translatedY = parseFloat(target.getAttribute('cy')) + translate[1];
 				displayCircleInfo(translatedX, translatedY);
 			}
+			// if (targetType === 'region_annotation') {
+			// 	target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
+			// }
+			updateSelection(target);
 		});
 
 		stage.addEventListener('mouseout', function () {
@@ -97,13 +100,17 @@ class Selector {
 			if (!self.isPanEnabled()) {
 				let target = event.target;
 				let targetType = target.getAttribute('class');
-				if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
-					self.offset.x = event.offsetX;
-					self.offset.y = event.offsetY;
+				if (!target.isSameNode(stage) && targetType && 
+					!targetType.startsWith("svg-pan-zoom-control") && !self.isRobotPoseAnnotation(target)) {
+					self.offset.x = event.clientX;
+					self.offset.y = event.clientY;
 					if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 						angleOffset = Math.atan2(target.getAttribute('y2') - target.getAttribute('y1'), 
 												 target.getAttribute('x2') - target.getAttribute('x1'));
 					}
+					// self.makeRegionAnnotationSelection(target)
+
+
 					self.selected = target;
 				}
 			}
@@ -114,32 +121,32 @@ class Selector {
 				let targetType = self.selected.getAttribute('class');
 				let label = getLabelElement(self.selected);
 				if (targetType === 'circle_annotation' && self.selectedRegion == null) {
-					let newOffset = self.calculateNewOffset(
+					let newPointOffset = self.calculateNewOffset(
 							parseFloat(self.selected.getAttribute('cx')), 
 							parseFloat(self.selected.getAttribute('cy')), 
-							event.offsetX, event.offsetY);
-					self.selected.setAttribute('cx', newOffset.x);
-					self.selected.setAttribute('cy', newOffset.y);
-					displayCircleInfo(newOffset.x, newOffset.y);
-					label.setAttribute('x', newOffset.x);
-					label.setAttribute('y', newOffset.y + labelPadding);
-					self.changeTracker.applyPointChange("save", label.textContent, newOffset.x, newOffset.y);
+							event.clientX, event.clientY);
+					self.selected.setAttribute('cx', newPointOffset.x);
+					self.selected.setAttribute('cy', newPointOffset.y);
+					displayCircleInfo(newPointOffset.x, newPointOffset.y);
+					self.changeTracker.applyPointChange("save", label.textContent, newPointOffset.x, newPointOffset.y);
+					self.updateLabelPosition(label, event.clientX, event.clientY);
 				} else if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 					let x1 = parseFloat(self.selected.getAttribute('x1'));
 					let y1 = parseFloat(self.selected.getAttribute('y1'));
-					let newOffset = self.calculateNewOffset(x1, y1, event.offsetX, event.offsetY);
 					if (!event.shiftKey) {  // move pose
+						let newOffset = self.calculateNewOffset(x1, y1, event.clientX, event.clientY);
 						self.selected.setAttribute('x1', newOffset.x);
 						self.selected.setAttribute('y1', newOffset.y);
-						label.setAttribute('x', newOffset.x);
-						label.setAttribute('y', newOffset.y + lineLength + labelPadding);
 						self.selected.setAttribute('x2', newOffset.x + lineLength * Math.cos(angleOffset));
 						self.selected.setAttribute('y2', newOffset.y + lineLength * Math.sin(angleOffset));
 						displayPoseInfo(newOffset.x, newOffset.y, angleOffset);
 						self.changeTracker.applyPoseChange("save", label.textContent, newOffset.x, newOffset.y, angleOffset);
+						self.updateLabelPosition(label, event.clientX, event.clientY);
 					} else {  // shift key pressed, change the arrow orientation
-						let transformedPoint = self.editor.getTransformedCoordinate(x1, y1);
-						angleOffset = Math.atan2(self.offset.y - transformedPoint[1], self.offset.x - transformedPoint[0]);
+						let x2 = parseFloat(self.selected.getAttribute('x2'));
+						let y2 = parseFloat(self.selected.getAttribute('y2'));
+						let newOffset = self.calculateNewOffset(x2, y2, event.clientX, event.clientY);
+						angleOffset = Math.atan2(newOffset.y - y1, newOffset.x - x1);
 						self.selected.setAttribute('x2', x1 + lineLength * Math.cos(angleOffset));
 						self.selected.setAttribute('y2', y1 + lineLength * Math.sin(angleOffset));
 						displayPoseInfo(x1, y1, angleOffset);
@@ -153,7 +160,7 @@ class Selector {
 					let oldUntransformedY = parseFloat(referencePointElement.getAttribute('cy'));
 					let newOffset = self.calculateNewOffset(
 							oldUntransformedX + translate[0], oldUntransformedY + translate[1], 
-							event.offsetX, event.offsetY);
+							event.clientX, event.clientY);
 					let newTranslateX = newOffset.x - oldUntransformedX;
 					let newTranslateY = newOffset.y - oldUntransformedY;
 					regionGroup.setAttribute('transform', 'translate(' + newTranslateX + ',' + newTranslateY + ')');
@@ -166,7 +173,7 @@ class Selector {
 					let newOffset = self.calculateNewOffset(
 						parseFloat(self.selected.getAttribute('cx')), 
 						parseFloat(self.selected.getAttribute('cy')), 
-						event.offsetX, event.offsetY);
+						event.clientX, event.clientY);
 					self.selected.setAttribute('cx', newOffset.x);
 					self.selected.setAttribute('cy', newOffset.y);
 					displayCircleInfo(newOffset.x, newOffset.y);
@@ -179,19 +186,23 @@ class Selector {
 					currentRegion.setAttribute('points', convertToString(points));
 					// adjust the region label position so that it's relative to endpoint #0
 					if (selectedEndpointId === 0) {
-						let textLabel = regionGroup.childNodes[0];
-						textLabel.setAttribute('x', newOffset.x);
-						textLabel.setAttribute('y', newOffset.y - labelPadding);
+						self.updateLabelPosition(regionGroup.childNodes[0], event.clientX, event.clientY);
 					}
 					// track change
 					self.changeTracker.moveRegionEndpoint(label.textContent, selectedEndpointId, newOffset.x, newOffset.y);
 					// always update the translate
 					let translate = getTranslate(regionGroup.getAttribute('transform'));
 					self.changeTracker.applyRegionChange("translate", label.textContent, points, translate[0], translate[1]);
+				} else if (targetType === 'text_annotation') {
+					// move label
+					let labelType = self.selected.parentElement.childNodes[1].getAttribute('class');
+					if (event.shiftKey && self.isValidLabelSelection(labelType)) {
+						self.updateLabelPosition(label, event.clientX, event.clientY);
+					}
 				}
 				updateSelection(self.selected);
-				self.offset.x = event.offsetX;
-				self.offset.y = event.offsetY;
+				self.offset.x = event.clientX;
+				self.offset.y = event.clientY;
 			}
 		});
 
@@ -254,10 +265,9 @@ class Selector {
 						textLabel.setAttribute('x', points[0][0]);
 						textLabel.setAttribute('y', points[0][1] - labelPadding);
 					}
-				} else if (targetType === 'text_annotation') {
+				} else if (targetType === 'text_annotation' && !event.shiftKey) {
 					let labelType = target.parentElement.childNodes[1].getAttribute('class');
-					if (labelType === "region_annotation" || 
-						(labelType != "region_annotation" && self.selectedRegion == null)) {
+					if (self.isValidLabelSelection(labelType)) {
 						let newLabel = promptForName(target.textContent);
 						if (newLabel != "") {
 							if (labelType === "circle_annotation" && !self.changeTracker.hasPoint(newLabel)) {
@@ -410,6 +420,15 @@ class Selector {
 		this.selectedRegion.style.fillOpacity = "0.5";
 	}
 
+	updateLabelPosition(label, clientX, clientY) {
+		let newLabelOffset = this.calculateNewOffset(
+			parseFloat(label.getAttribute('x')), 
+			parseFloat(label.getAttribute('y')), 
+			clientX, clientY);
+		label.setAttribute('x', newLabelOffset.x);
+		label.setAttribute('y', newLabelOffset.y);
+	}
+
 	calculateNewOffset(oldX, oldY, currentOffsetX, currentOffsetY) {
 		let x = currentOffsetX - this.offset.x;
 		let y = currentOffsetY - this.offset.y;
@@ -419,4 +438,14 @@ class Selector {
 		let newOffsetY = oldY + unzoomedDistance * Math.sin(angle);
 		return {x: newOffsetX, y: newOffsetY, angle: angle};
 	}
+
+	isRobotPoseAnnotation(target) {
+		return target.parentElement.getAttribute('id') === 'robotPose';
+	}
+
+	isValidLabelSelection(labelType) {
+		return labelType === "region_annotation" || (labelType != "region_annotation" && this.selectedRegion == null);
+	}
+
+	
 }

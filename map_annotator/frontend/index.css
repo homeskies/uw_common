@@ -21,6 +21,7 @@ button {
     -webkit-font-smoothing: antialiased;
     padding: 0.5em 0.5em;
     font-weight: bold;
+    border-radius: 10px;
 }
 
 button:hover {
@@ -110,6 +111,7 @@ input {
     border-radius: 1em;
     color: white;
     opacity: 0.8;
+    line-height: 1.5em;
 }
 
 #connectDb, #manageDb, #fileBtns button:enabled {
@@ -235,6 +237,10 @@ input {
 }
 
 /* Slider */
+input {
+    width: 100%;
+}
+
 #editor {
     position: relative;
 }
