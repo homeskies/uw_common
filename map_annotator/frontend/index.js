@@ -73,6 +73,10 @@ $(function() {
         this.trackerPopup = document.getElementById("trackerPopup");
         this.trackerPopupContent = document.getElementById("trackerPopupContent");
 
+        // Main parts
+        this.editor = new Editor();
+        this.editor.setup(this.stage, canvas);
+        
         // ROS setup
         let websocketUrl = (function () {
             let hostname = window.location.hostname;
@@ -88,6 +92,8 @@ $(function() {
         this.ros.on('error', function (error) {
             self.statusBar.innerHTML = "Error connecting to ROS websocket server.";
             self.statusBar.style.color = RED;
+            // remove the robot pose annotation
+            self.editor.removeRobotPoseAnnotation(null);
         });
         this.ros.on('connection', function () {
             self.statusBar.innerHTML = "Connected to ROS!";
@@ -96,6 +102,8 @@ $(function() {
         this.ros.on('close', function (error) {
             self.statusBar.innerHTML = "No connection to ROS.";
             self.statusBar.style.color = DARK_YELLOW;
+            // remove the robot pose annotation
+            self.editor.removeRobotPoseAnnotation(null);
         });
         // ROS topic
         let mapAnnotationTopic = new ROSLIB.Topic({
@@ -137,13 +145,11 @@ $(function() {
         });
 
         // Main parts
-        this.editor = new Editor();
-        this.editor.setup(this.stage, canvas);
         this.changeTracker = new ChangeTracker(mapAnnotationTopic, this.editor);
-        this.selector = new Selector(this.stage, this.editor, this.changeTracker, 
-                this.hasPointService, this.hasPoseService, this.hasRegionService,
-                LINE_LENGTH, LABEL_PADDING);
-        
+        this.selector = new Selector(this.stage, this.editor, this.changeTracker,
+            this.hasPointService, this.hasPoseService, this.hasRegionService,
+            LINE_LENGTH, LABEL_PADDING);
+
         setEditorButtonStatus(true);
 
         // CONNECT/DISCONNECT TO DATABASE
@@ -245,10 +251,7 @@ $(function() {
                 // create a clone of the SVG node so we don't mess the original one
                 let clone = self.editor.cloneStage();
                 // remove the robot pose from the cloned SVG
-                let robotPoseElement = clone.getElementById("robotPose");
-                if (robotPoseElement) {
-                    clone.querySelector(".svg-pan-zoom_viewport").removeChild(robotPoseElement);
-                }
+                self.editor.removeRobotPoseAnnotation(clone);
                 // download SVG
                 let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
                 link.href = URL.createObjectURL(svgBlob);
@@ -783,6 +786,8 @@ $(function() {
             self.dbManageBtn.style.display = "none";
             self.saveBtn.innerText = "Download Image";
             self.dbConnected = false;
+            // remove the robot pose annotation
+            self.editor.removeRobotPoseAnnotation(null);
         }
     }
 

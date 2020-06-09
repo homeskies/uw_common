@@ -176,6 +176,16 @@ class Editor {
 		g.removeChild(element);
 	}
 
+	removeRobotPoseAnnotation(svg) {
+		if (svg == null) {
+			svg = this.svg;
+		}
+		let robotPoseElement = svg.getElementById("robotPose");
+		if (robotPoseElement) {
+			svg.querySelector(".svg-pan-zoom_viewport").removeChild(robotPoseElement);
+		}
+	}
+
 	resizeCircles(newRadius) {
 		let circles = document.querySelectorAll("circle");
 		for (let i = 0; i < circles.length; i++) {
