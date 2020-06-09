@@ -33,7 +33,7 @@ class Selector {
 
 		function updateSelection(element) {
 			if (element.isSameNode(stage) || element.getAttribute('id') === "background_img" || 
-				(element.getAttribute('class') && element.getAttribute('class').startsWith("svg-pan-zoom-control"))) {
+				(element.getAttribute('class') && element.getAttribute('class').startsWith("svg-pan-zoom"))) {
 				// remove previous highlight
 				selection.style.display = 'none';
 				return;
@@ -85,9 +85,9 @@ class Selector {
 				let translatedY = parseFloat(target.getAttribute('cy')) + translate[1];
 				displayCircleInfo(translatedX, translatedY);
 			}
-			// if (targetType === 'region_annotation') {
-			// 	target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
-			// }
+			if (targetType === 'region_annotation') {
+				target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
+			}
 			updateSelection(target);
 		});
 
@@ -101,16 +101,15 @@ class Selector {
 				let target = event.target;
 				let targetType = target.getAttribute('class');
 				if (!target.isSameNode(stage) && targetType && 
-					!targetType.startsWith("svg-pan-zoom-control") && !self.isRobotPoseAnnotation(target)) {
+					!targetType.startsWith("svg-pan-zoom") && !self.isRobotPoseAnnotation(target)) {
 					self.offset.x = event.clientX;
 					self.offset.y = event.clientY;
 					if (targetType === 'pose_line_annotation' && self.selectedRegion == null) {
 						angleOffset = Math.atan2(target.getAttribute('y2') - target.getAttribute('y1'), 
 												 target.getAttribute('x2') - target.getAttribute('x1'));
+					} else if (targetType === 'region_annotation') {
+						target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
 					}
-					// self.makeRegionAnnotationSelection(target)
-
-
 					self.selected = target;
 				}
 			}
@@ -214,7 +213,11 @@ class Selector {
 		stage.addEventListener('click', function (event) {
 			let target = event.target;
 			let targetType = target.getAttribute('class');
-			if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom-control")) {
+			if (!target.isSameNode(stage) && targetType && !targetType.startsWith("svg-pan-zoom")) {
+				if (targetType === 'region_annotation') {
+					target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
+					targetType = target.getAttribute('class');
+				}
 				if (self.inShapeDeleteMode && targetType === self.typeToDelete) {
 					// DELETE shape
 					let elementName = getLabelElement(target).textContent;
@@ -343,6 +346,7 @@ class Selector {
 						}
 					}
 				}
+				updateSelection(target);
 			}
 		});
 	}
@@ -447,5 +451,15 @@ class Selector {
 		return labelType === "region_annotation" || (labelType != "region_annotation" && this.selectedRegion == null);
 	}
 
-	
+	makeRegionAnnotationSelection(region, clientX, clientY) {
+		// in case the region label is within the region, determine whether the mouse is over the label or the region
+		let label = region.parentElement.childNodes[0];
+		let labelRect = label.getBoundingClientRect();
+		let left = labelRect.left + window.pageXOffset;
+		let top = labelRect.top + window.pageYOffset;
+		if (left <= clientX && clientX <= left + labelRect.width && top <= clientY && clientY <= top + labelRect.height) {
+			return label;
+		}
+		return region;
+	}
 }

@@ -3,6 +3,10 @@ body {
     font-family: sans-serif;
 }
 
+#title, button, .dropdown_content, .dropdown_content a {
+    border-radius: 10px;
+}
+
 #stage, #canvas {
     position: absolute;
     left: 1em;
@@ -21,7 +25,6 @@ button {
     -webkit-font-smoothing: antialiased;
     padding: 0.5em 0.5em;
     font-weight: bold;
-    border-radius: 10px;
 }
 
 button:hover {
@@ -87,6 +90,8 @@ button.disabled {
 #title {
     width: 40%;
     margin-bottom: 0.5em;
+    border-width: 1px;
+    line-height: 1.5em;
 }
 
 input {
