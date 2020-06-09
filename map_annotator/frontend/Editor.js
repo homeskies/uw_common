@@ -197,9 +197,13 @@ class Editor {
 
 	clearAnnotations() {
 		let svgContent = document.querySelector(".svg-pan-zoom_viewport");
-		let svgChildNodes = svgContent.childNodes;
-		for (let i = 1; i < svgChildNodes.length; i++) {
-			svgContent.removeChild(svgChildNodes[i]);
+		let i = 0;
+		while (svgContent.children.length > 1) {
+			if (svgContent.children[i].getAttribute('id') != "background_img") {
+				svgContent.removeChild(svgContent.children[i]);
+			} else {
+				i++;
+			}
 		}
 	}
 
