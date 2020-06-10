@@ -223,13 +223,15 @@ class Selector {
 					let elementName = getLabelElement(target).textContent;
 					if (targetType === 'circle_annotation') {
 						self.changeTracker.applyPointChange("delete", elementName);
+						self.editor.deleteElementOfType("points", target.parentElement);
 					} else if (targetType === 'pose_line_annotation') {
 						self.changeTracker.applyPoseChange("delete", elementName);
+						self.editor.deleteElementOfType("poses", target.parentElement);
 					} else if (targetType === 'region_annotation') {
 						self.deletedRegionIds.push(getRegionId(target));
 						self.changeTracker.applyRegionChange("delete", elementName);
+						self.editor.deleteElementOfType("regions", target.parentElement);
 					}
-					self.editor.deleteElement(target.parentElement);
 				} else if (targetType === 'region_annotation') {
 					// edit selected region
 					self.enterRegionEditor(target);
@@ -243,7 +245,7 @@ class Selector {
 					let regionName = getLabelElement(target).textContent;
 					if (points.length === 3) {  // delete the entire region
 						self.deletedRegionIds.push(getRegionId(group.childNodes[2]));
-						self.editor.deleteElement(group);
+						self.editor.deleteElementOfType("regions", group);
 						self.changeTracker.applyRegionChange("delete", regionName);
 						self.selectedRegion = null;
 						// exit region editing mode

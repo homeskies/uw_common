@@ -573,7 +573,7 @@ $(function() {
             let labelY = y + LINE_LENGTH + LABEL_PADDING;
             let poseX2 = x + LINE_LENGTH * Math.cos(theta);
             let poseY2 = y + LINE_LENGTH * Math.sin(theta);
-            if (robotPose) {
+            if (robotPose) {  // edit existing robot pose
                 let poseLabel = robotPose.childNodes[0];
                 poseLabel.setAttribute('x', x);
                 poseLabel.setAttribute('y', labelY);
@@ -582,20 +582,17 @@ $(function() {
                 poseLine.setAttribute('y1', y);
                 poseLine.setAttribute('x2', poseX2);
                 poseLine.setAttribute('y2', poseY2);
-            } else {
+            } else {  // add a new robot pose
                 let poseGroup = document.createElementNS(NS, 'g');
                 poseGroup.id = "robotPose";
                 let label = makeLabel(x, labelY, GREEN, "Robot");
                 poseGroup.appendChild(label);
                 // arrow head
-                let arrowhead = makeArrowhead(GREEN);
-                let arrowmarker = makeArrowmarker("RobotPoseArrowMarker");
-                arrowmarker.appendChild(arrowhead);
-                self.editor.addElement(arrowmarker);
+                self.editor.addArrowHead(GREEN, "robotpose_arrowhead_def");
                 // arrow line
-                let arrowline = makeArrowline(x, y, poseX2, poseY2, "RobotPoseArrowMarker", GREEN);
+                let arrowline = makeArrowline(x, y, poseX2, poseY2, "robotpose_arrowhead_def", GREEN);
                 poseGroup.appendChild(arrowline);
-                self.editor.addElement(poseGroup);
+                self.editor.addElementOfType("unknown", poseGroup);
             }
         }
     }
@@ -609,7 +606,7 @@ $(function() {
         pointGroup.appendChild(label);
         let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
         pointGroup.appendChild(circle);
-        self.editor.addElement(pointGroup);
+        self.editor.addElementOfType("points", pointGroup);
         self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
     }
 
@@ -618,14 +615,11 @@ $(function() {
         let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
         poseGroup.appendChild(label);
         // arrow head
-        let arrowhead = makeArrowhead(BLUE);
-        let arrowmarker = makeArrowmarker(labelName);
-        arrowmarker.appendChild(arrowhead);
-        self.editor.addElement(arrowmarker);
+        self.editor.addArrowHead(BLUE, "arrowhead_def");
         // arrow line
-        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, labelName, BLUE);
+        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, "arrowhead_def", BLUE);
         poseGroup.appendChild(arrowline);
-        self.editor.addElement(poseGroup);
+        self.editor.addElementOfType("poses", poseGroup);
         self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
     }
 
@@ -642,10 +636,12 @@ $(function() {
         // the region label position is relative to endpoint #0
         let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
         regionGroup.appendChild(label);
-        // add a triangle to start
+        // add a square to start
         let basicRegion = document.createElementNS(NS, 'polygon');
-        let points = [[midpointX, midpointY], [midpointX + INITIAL_REGION_SIZE, midpointY],
-        [midpointX, midpointY + INITIAL_REGION_SIZE]];
+        let points = [[midpointX, midpointY], 
+                      [midpointX + INITIAL_REGION_SIZE, midpointY],
+                      [midpointX + INITIAL_REGION_SIZE, midpointY + INITIAL_REGION_SIZE],
+                      [midpointX, midpointY + INITIAL_REGION_SIZE]];
         basicRegion.setAttribute('class', 'region_annotation');
         basicRegion.setAttribute('points', convertToString(points));
         basicRegion.style.fill = 'transparent';
@@ -658,7 +654,7 @@ $(function() {
             let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
             regionGroup.appendChild(circle);
         }
-        self.editor.addElement(regionGroup);
+        self.editor.addElementOfType("regions", regionGroup);
         self.changeTracker.applyRegionChange("save", labelName, points);
     }
     
@@ -690,24 +686,6 @@ $(function() {
         return circle;
     }
 
-    function makeArrowhead(color) {
-        let arrowhead = document.createElementNS(NS, 'polygon');
-        arrowhead.style.fill = color;
-        arrowhead.setAttribute('points', "0 0,2 1,0 2");
-        return arrowhead;
-    }
-
-    function makeArrowmarker(arrowMarkerId) {
-        let arrowmarker = document.createElementNS(NS, 'marker');
-        arrowmarker.setAttribute('id', 'arrowhead' + arrowMarkerId);
-        arrowmarker.setAttribute('markerWidth', 2);
-        arrowmarker.setAttribute('markerHeight', 2);
-        arrowmarker.setAttribute('refX', 0);
-        arrowmarker.setAttribute('refY', 1);
-        arrowmarker.setAttribute('orient', "auto");
-        return arrowmarker;
-    }
-
     function makeArrowline(x1, y1, x2, y2, arrowMarkerId, color) {
         let arrowline = document.createElementNS(NS, 'line');
         if (color != GREEN) {
@@ -719,7 +697,7 @@ $(function() {
         arrowline.setAttribute('y1', y1);
         arrowline.setAttribute('x2', x2);
         arrowline.setAttribute('y2', y2);
-        arrowline.setAttribute('marker-end', "url(#arrowhead" + arrowMarkerId + ")");
+        arrowline.setAttribute('marker-end', "url(#" + arrowMarkerId + ")");
         arrowline.style.stroke = color;
         arrowline.style.strokeWidth = lineWidth;
         return arrowline;

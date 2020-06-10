@@ -71,6 +71,7 @@ class Editor {
 		this.svg.innerHTML = svgFileContent.documentElement.innerHTML;
 		this.isReady = true;
 		this.enablePanZoom();
+		this.formateSvg();
 	}
 
 	setPGM(pgmFileContent) {
@@ -116,6 +117,7 @@ class Editor {
 
 		this.isReady = true;
 		this.enablePanZoom();
+		this.initializeAnnotationGroups();
 	}
 
 	enablePanZoom() {
@@ -132,6 +134,64 @@ class Editor {
 		);
 		this.disablePan();
 		this.fill();
+	}
+
+	formateSvg() {
+		let svgContent = document.querySelector(".svg-pan-zoom_viewport");
+		if (!svgContent.querySelector("#points")) {
+			// format existing annotations into groups with order (from top to bottom)
+			// point -> pose -> region
+			let elements = [];
+			let i = 0;
+			while (svgContent.children.length > 1) {
+				if (svgContent.children[i].getAttribute('id') != "background_img") {
+					elements.push(svgContent.removeChild(svgContent.children[i]));
+				} else {
+					i++;
+				}
+			}
+			this.initializeAnnotationGroups();
+			for (let i = 0; i < elements.length; i++) {
+				let element = elements[i];
+				if (element.tagName === "g" && element.childNodes.length > 1) {
+					let type = element.childNodes[1].getAttribute('class');
+					if (type === 'circle_annotation') {
+						this.addElementOfType("points", element);
+					} else if (type === 'pose_line_annotation') {
+						this.addElementOfType("poses", element);
+					} else if (type === 'region_annotation') {
+						this.addElementOfType("regions", element);
+					} else {
+						this.addElementOfType("unknown", element);
+					}
+				} else if (element.tagName === "marker") {
+					this.addElementOfType("annotation_defs", element);
+				} else {
+					this.addElementOfType("unknown", element);
+				}
+			}
+		}
+	}
+
+	initializeAnnotationGroups() {
+		// this determines the display order: (from top to bottom)
+		// point -> pose -> region -> unknown
+		let points = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		points.id = "points";
+		let poses = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		poses.id = "poses";
+		let regions = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		regions.id = "regions";
+		let unknown = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		unknown.id = "unknown";
+		let defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+		defs.id = "annotation_defs";
+
+		this.addElement(defs);
+		this.addElement(unknown);
+		this.addElement(regions);
+		this.addElement(poses);
+		this.addElement(points);
 	}
 
 	fill() {
@@ -168,8 +228,35 @@ class Editor {
 		document.querySelector(".svg-pan-zoom_viewport").appendChild(document.createTextNode('\n'));
 	}
 
+	addElementOfType(type, element) {
+		document.querySelector("#" + type).appendChild(element);
+		document.querySelector("#" + type).appendChild(document.createTextNode('\n'));
+	}
+
+	addArrowHead(color, arrowMarkerId) {
+		// add an arrow head to defs if it doesn't exist
+		if (!document.querySelector("#" + arrowMarkerId)) {
+			let arrowhead = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+			arrowhead.style.fill = color;
+			arrowhead.setAttribute('points', "0 0,2 1,0 2");
+			let arrowmarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+			arrowmarker.setAttribute('id', arrowMarkerId);
+			arrowmarker.setAttribute('markerWidth', 2);
+			arrowmarker.setAttribute('markerHeight', 2);
+			arrowmarker.setAttribute('refX', 0);
+			arrowmarker.setAttribute('refY', 1);
+			arrowmarker.setAttribute('orient', "auto");
+			arrowmarker.appendChild(arrowhead);
+			this.addElementOfType("annotation_defs", arrowmarker);
+		}
+	}
+
 	deleteElement(element) {
 		document.querySelector(".svg-pan-zoom_viewport").removeChild(element);
+	}
+
+	deleteElementOfType(type, element) {
+		document.querySelector("#" + type).removeChild(element);
 	}
 
 	deleteElementOfGroup(g, element) {
@@ -182,7 +269,7 @@ class Editor {
 		}
 		let robotPoseElement = svg.getElementById("robotPose");
 		if (robotPoseElement) {
-			svg.querySelector(".svg-pan-zoom_viewport").removeChild(robotPoseElement);
+			svg.querySelector("#unknown").removeChild(robotPoseElement);
 		}
 	}
 
