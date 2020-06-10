@@ -11,8 +11,8 @@ $(function() {
     const DARK_YELLOW = "#998100";
     const GREEN = "#a7c44c";
     
-    let circleRadius = 3.5;
-    let lineWidth = 4;
+    let circleRadius = 2;
+    let lineWidth = 2;
     const LINE_LENGTH = 18;
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 20;
@@ -338,7 +338,7 @@ $(function() {
                 showTooltip("add", "Drag & drop to move the pose.</br>Press \"SHIFT\" & drag the pose to change orientation." +
                             "</br>Press \"SHIFT\" & drag to move the label");
             } else if (selectedShape === "Region"){
-                showTooltip("add", "Click this button to add regions.</br>Click on the region to edit it." +
+                showTooltip("add", "Click this button to add regions.</br>Press \"SHIFT\" & click on the region to edit it." +
                             "</br>Press \"SHIFT\" & drag to move the label");
             }
         });

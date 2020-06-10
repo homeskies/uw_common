@@ -240,13 +240,13 @@ class Editor {
 		if (!document.querySelector("#" + arrowMarkerId)) {
 			let arrowhead = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
 			arrowhead.style.fill = color;
-			arrowhead.setAttribute('points', "0 0,2 1,0 2");
+			arrowhead.setAttribute('points', "0 0,3 1.5,0 3");
 			let arrowmarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
 			arrowmarker.setAttribute('id', arrowMarkerId);
-			arrowmarker.setAttribute('markerWidth', 2);
-			arrowmarker.setAttribute('markerHeight', 2);
+			arrowmarker.setAttribute('markerWidth', 3);
+			arrowmarker.setAttribute('markerHeight', 3);
 			arrowmarker.setAttribute('refX', 0);
-			arrowmarker.setAttribute('refY', 1);
+			arrowmarker.setAttribute('refY', 1.5);
 			arrowmarker.setAttribute('orient', "auto");
 			arrowmarker.appendChild(arrowhead);
 			this.addElementOfType("annotation_defs", arrowmarker);

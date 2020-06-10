@@ -232,7 +232,7 @@ class Selector {
 						self.changeTracker.applyRegionChange("delete", elementName);
 						self.editor.deleteElementOfType("regions", target.parentElement);
 					}
-				} else if (targetType === 'region_annotation') {
+				} else if (targetType === 'region_annotation' && event.shiftKey) {
 					// edit selected region
 					self.enterRegionEditor(target);
 				} else if (self.inEndpointDeleteMode && event.shiftKey && 
