@@ -545,8 +545,7 @@ $(function() {
     }
 
     function clearAnnotations() {
-        self.editor.clearAnnotations();
-        self.changeTracker.reset();
+        self.editor.clearAnnotations(self.changeTracker);
     }
 
     function clearEditor() {

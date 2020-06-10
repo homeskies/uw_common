@@ -14,10 +14,10 @@ class Pose extends Point {
     }
 
     toString() {
-        return super.toString() + "\nTheta: -" + this.theta;
+        return super.toString() + "\nTheta: " + (-this.theta);
     }
 
     toHtmlString() {
-        return super.toHtmlString() + "<p>Theta: -" + this.theta + "</p>";
+        return super.toHtmlString() + "<p>Theta: " + (-this.theta) + "</p>";
     }
 }

@@ -1,5 +1,6 @@
 class Editor {
 	constructor() {
+		this.selector = null;
 		this.svg = null;
 		this.canvas = null;
 		this.pixelWidth = 0;
@@ -294,13 +295,14 @@ class Editor {
 		return this.svg.cloneNode(true);
 	}
 
-	clearAnnotations() {
+	clearAnnotations(changeTracker) {
 		// delete everything except the background image, robot pose, and annotation groups
 		let robotPose = this.svg.getElementById("robotPose");
 		let svgContent = document.querySelector(".svg-pan-zoom_viewport");
 		for (let i = 0; i < svgContent.children.length; i++) {
 			let element = svgContent.children[i];
-			if (element.getAttribute('id') === "unknown" && robotPose) {
+			let elementType = element.getAttribute('id');
+			if (elementType === "unknown" && robotPose) {
 				// keep the robot pose
 				let i = 0;
 				while (element.children.length > 1) {
@@ -310,9 +312,19 @@ class Editor {
 						i++;
 					}
 				}
-			} else if (element.getAttribute('id') != "background_img") {
+			} else if (elementType != "background_img") {
 				while (element.children.length > 0) {
-					element.removeChild(element.firstChild);
+					let childDeleted = element.removeChild(element.firstChild);
+					if (childDeleted.tagName === "g" && childDeleted.childNodes.length > 1) {
+						let childLabelName = childDeleted.childNodes[0].textContent;
+						if (elementType === 'points') {
+							changeTracker.applyPointChange("delete", childLabelName);
+						} else if (elementType === 'poses') {
+							changeTracker.applyPoseChange("delete", childLabelName);
+						} else if (elementType === 'regions') {
+							changeTracker.applyRegionChange("delete", childLabelName);
+						}
+					}
 				}
 			}
 		}
