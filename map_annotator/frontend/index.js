@@ -174,6 +174,7 @@ $(function() {
                     self.editor.clear();
                     self.changeTracker.reset();
                     self.stage.style.borderColor = WHITE;
+                    hideAllTooltips();
                     // read YAML file
                     let contents = event.target.result;
                     // parse YAML file content to JSON
@@ -306,6 +307,11 @@ $(function() {
         });
 
         // EDITOR
+        window.addEventListener('resize', function() {
+            // resize the editor view
+            self.editor.resizeView();
+        });
+
         let shapeTypeDropdownList = document.querySelectorAll(".dropdown_content a");
         for (let i = 0; i < shapeTypeDropdownList.length; i++) {
             shapeTypeDropdownList[i].addEventListener("click", function() {
@@ -545,6 +551,7 @@ $(function() {
 
     function clearEditor() {
         setEditorButtonStatus(true);
+        hideAllTooltips();
         self.editor.clear();
         self.changeTracker.reset();
         title.value = "Please upload a .yaml file to begin";
@@ -827,6 +834,13 @@ $(function() {
 
     function hideTooltip(type) {
         document.getElementById(type + "Tooltip").style.visibility = "hidden";
+    }
+
+    function hideAllTooltips() {
+        let tooltips = document.querySelectorAll(".tooltip");
+        for (let i = 0; i < tooltips.length; i++) {
+            tooltips[i].style.visibility = "hidden";
+        }
     }
 
     function showHelpPopup(content) {

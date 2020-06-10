@@ -7,19 +7,32 @@ body {
     border-radius: 10px;
 }
 
-#stage, #canvas {
-    position: absolute;
-    left: 1em;
+/* Editor */
+#content, #sideCtrlPanelContainer {
+    display: inline-block;
 }
 
-#canvas {
-    z-index: -1;
+#content {
+    width: 80%;
 }
 
 #stage {
     border: 3px solid #fff;
 }
 
+input {
+    width: 100%;
+}
+
+#sideCtrlPanelContainer {
+    width:15%;
+}
+
+#panZoomCtrlContainer {
+    margin-top: 5em;
+}
+
+/* Buttons */
 button {
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
@@ -239,25 +252,6 @@ input {
     text-align: left;
     font-size: 0.8em;
     line-height: 1em;
-}
-
-/* Slider */
-input {
-    width: 100%;
-}
-
-#editor {
-    position: relative;
-}
-
-#sideCtrlPanelContainer {
-    width: 15%;
-    position: absolute;
-    right: 1em;
-}
-
-#panZoomCtrlContainer {
-    margin-top: 5em;
 }
 
 

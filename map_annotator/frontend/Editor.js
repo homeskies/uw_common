@@ -10,9 +10,10 @@ class Editor {
 		this.isReady = false;
 		this.panZoomStage = null;
 		this.isPanEnabled = false;
-		// zoom and pan scale to make the image fill the editor canvas
+		// for zoom and pan
 		this.scaleToFill = 1;
-		this.panToFill = {x: 0, y: 0};
+		this.displayWidth = 0;
+		this.displayHeight = 0;
 	}
 
 	setup(svg, canvas) {
@@ -66,15 +67,16 @@ class Editor {
 		this.origin.y = yamlFileContent["origin"][1];
 	}
 
-	setSVG(svgFileContent) {	
+	setSVG(svgFileContent) {
+		this.isReady = true;
 		this.setDimension(svgFileContent.documentElement.viewBox.baseVal.width, svgFileContent.documentElement.viewBox.baseVal.height);
 		this.svg.innerHTML = svgFileContent.documentElement.innerHTML;
-		this.isReady = true;
 		this.enablePanZoom();
 		this.formateSvg();
 	}
 
 	setPGM(pgmFileContent) {
+		this.isReady = true;
 		// convert the pgmFileContent array to string to get the PGM width and height
 		let uint8array = new Uint8Array(pgmFileContent);
 		let lines = new TextDecoder().decode(uint8array).split('\n');
@@ -115,7 +117,6 @@ class Editor {
 		svgImg.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", imgDataUrl);
 		this.svg.appendChild(svgImg);
 
-		this.isReady = true;
 		this.enablePanZoom();
 		this.initializeAnnotationGroups();
 	}
@@ -198,8 +199,9 @@ class Editor {
 		// zoom and pan the image to fill the editor canvas
 		if (this.panZoomStage) {
 			this.panZoomStage.reset();
-			this.panZoomStage.pan({x: this.panToFill.x, y: this.panToFill.y});
-			this.panZoomStage.zoomBy(this.scaleToFill);
+			this.panZoomStage.panBy({x: (this.displayWidth / 2) - (this.pixelWidth / 2), 
+									 y: (this.displayHeight / 2) - (this.pixelHeight / 2)});
+			this.panZoomStage.zoomAtPointBy(this.scaleToFill, {x: this.displayWidth / 2, y: this.displayHeight / 2});
 		}
 	}
 
@@ -293,13 +295,25 @@ class Editor {
 	}
 
 	clearAnnotations() {
+		// delete everything except the background image, robot pose, and annotation groups
+		let robotPose = this.svg.getElementById("robotPose");
 		let svgContent = document.querySelector(".svg-pan-zoom_viewport");
-		let i = 0;
-		while (svgContent.children.length > 1) {
-			if (svgContent.children[i].getAttribute('id') != "background_img") {
-				svgContent.removeChild(svgContent.children[i]);
-			} else {
-				i++;
+		for (let i = 0; i < svgContent.children.length; i++) {
+			let element = svgContent.children[i];
+			if (element.getAttribute('id') === "unknown" && robotPose) {
+				// keep the robot pose
+				let i = 0;
+				while (element.children.length > 1) {
+					if (element.children[i].getAttribute('id') != "robotPose") {
+						element.removeChild(element.children[i]);
+					} else {
+						i++;
+					}
+				}
+			} else if (element.getAttribute('id') != "background_img") {
+				while (element.children.length > 0) {
+					element.removeChild(element.firstChild);
+				}
 			}
 		}
 	}
@@ -321,7 +335,8 @@ class Editor {
 		this.mapOriginY = 0;
 		this.isReady = false;
 		this.scaleToFill = 1;
-		this.panToFill = {x: 0, y: 0};
+		this.displayWidth = 0;
+		this.displayHeight = 0;
 		document.getElementById("selection").style.display = "none";
 	}
 
@@ -341,14 +356,18 @@ class Editor {
 		this.pixelWidth = pixelWidth;
 		this.pixelHeight = pixelHeight;
 		this.mapOriginY = (this.pixelHeight - Math.abs(this.origin.y) / this.resolution) * this.resolution;
-		// adjust the size of svg area so that the image won't appear too small or too large
-		this.scaleToFill = Math.min((0.75 * window.innerWidth) / this.pixelWidth, (0.6 * window.innerHeight) / this.pixelHeight);
-		let displayWidth = this.pixelWidth * this.scaleToFill;
-		let displayHeight = this.pixelHeight * this.scaleToFill;
-		this.panToFill.x = (displayWidth / 2) - (this.pixelWidth / 2);
-		this.panToFill.y = (displayHeight / 2) - (this.pixelHeight / 2);
-		this.svg.setAttribute("width", displayWidth);
-		this.svg.setAttribute("height", displayHeight);
-		this.svg.setAttribute("viewBox", "0 0 " + displayWidth + " " + displayHeight);
+		this.resizeView();
+	}
+
+	resizeView() {
+		if (this.isReadyToUse()) {
+			// adjust the size of svg area so that the image won't appear too small or too large
+			this.scaleToFill = Math.min((0.75 * window.innerWidth) / this.pixelWidth, (0.6 * window.innerHeight) / this.pixelHeight);
+			this.displayWidth = this.pixelWidth * this.scaleToFill;
+			this.displayHeight = this.pixelHeight * this.scaleToFill;
+			this.svg.setAttribute("width", this.displayWidth);
+			this.svg.setAttribute("height", this.displayHeight);
+			this.svg.setAttribute("viewBox", "0 0 " + this.displayWidth + " " + this.displayHeight);
+		}
 	}
 }
