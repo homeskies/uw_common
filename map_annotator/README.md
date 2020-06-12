@@ -19,11 +19,8 @@ To use the interface in database mode, in addition to launching the python serve
   * On the web interface, click the top right button to connect/disconnect with the database.
 
 ### A Short Demo
-<!-- blank line -->
-<figure class="video_container">
-  <iframe src="https://www.youtube.com/embed/y-9LvlOPW6E" frameborder="0" allowfullscreen="true"> </iframe>
-</figure>
-<!-- blank line -->
+<a href="https://youtu.be/y-9LvlOPW6E" target="_blank"><img src="screenshots/screenshot.png" 
+alt="Map annotator demo" width="500" border="2" /></a>
 
 ***
 If you find any bugs or have any questions, please feel free to contact Xinyi Wang: wangx227@cs.washington.edu :)
