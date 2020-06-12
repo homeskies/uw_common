@@ -121,7 +121,8 @@ class Server(object):
             else:
                 if curr_pt:
                     curr_pt.delete()
-                target_map.add_point(pt.current_name, pt.x, pt.y)
+                if not pt.deleted:
+                    target_map.add_point(pt.current_name, pt.x, pt.y)
 
         print("POINT AFTER: ")
         self._print_all_points(target_map)
@@ -148,7 +149,8 @@ class Server(object):
             else:
                 if curr_ps:
                     curr_ps.delete()
-                target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)
+                if not ps.deleted:
+                    target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)
 
         print("POSE AFTER: ")
         self._print_all_poses(target_map)
@@ -181,7 +183,8 @@ class Server(object):
                     updated_endpoints = self.update_region_endpoints(old_endpoints, r.endpoints)
                     if curr_r:
                         curr_r.delete()
-                    target_map.add_region(r.current_name, updated_endpoints)
+                    if not r.deleted:
+                        target_map.add_region(r.current_name, updated_endpoints)
 
         print("REGION AFTER: ")
         self._print_all_regions(target_map)
@@ -197,8 +200,8 @@ class Server(object):
         return None
 
     def update_region_endpoints(self, old_endpoints, new_endpoints):
-        """ 
-            Combine the old list of endpoints with the list of new endpoints, 
+        """
+            Combine the old list of endpoints with the list of new endpoints,
             and return a list of tuple as the updated list.
         """
         # old_endpoints (list of tuple): [p, p, p, p]

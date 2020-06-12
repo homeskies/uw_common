@@ -3,12 +3,6 @@ body {
     font-family: sans-serif;
 }
 
-#selection {
-    position: absolute;
-	outline: solid 2px #99f;
-	pointer-events: none;
-}
-
 #title, button, .dropdown_content, .dropdown_content a {
     border-radius: 10px;
 }
@@ -24,6 +18,10 @@ body {
 
 #stage {
     border: 3px solid #fff;
+}
+
+#background_img {
+    cursor: zoom-in;
 }
 
 input {

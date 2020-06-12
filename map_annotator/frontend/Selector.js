@@ -23,21 +23,8 @@ class Selector {
 		this.deletedRegionIds = [];
 		let angleOffset = 0;  // angle offset for pose orientation (in radians)
 
-		function updateSelection(element) {
-			if (element.isSameNode(stage) || element.getAttribute('id') === "background_img" || 
-				(element.getAttribute('class') && element.getAttribute('class').startsWith("svg-pan-zoom"))) {
-				// remove previous highlight
-				selection.style.display = 'none';
-				return;
-			}
-			// highlight selection
-			let rect = element.getBoundingClientRect();
-			selection.style.left = (rect.left + window.pageXOffset) + 'px';
-			selection.style.top = (rect.top + window.pageYOffset) + 'px';
-			selection.style.width = rect.width + 'px';
-			selection.style.height = rect.height + 'px';
-			selection.style.display = 'block';
-		}
+		this.prevHighlight = null;
+		this.prevColor = "";
 
 		function displayCircleInfo(x, y) {
 			let mapCoordinate = self.editor.getMapCoordinate(x, y);
@@ -77,14 +64,15 @@ class Selector {
 				let translatedY = parseFloat(target.getAttribute('cy')) + translate[1];
 				displayCircleInfo(translatedX, translatedY);
 			}
-			if (targetType === 'region_annotation') {
-				target = self.makeRegionAnnotationSelection(target, event.clientX, event.clientY);
-			}
-			updateSelection(target);
+			self.updateSelection(target);
+			// if (targetType && targetType != "text_annotation" && targetType.endsWith("annotation")) {
+			// 	target.style.cursor = "grab";
+			// }
 		});
 
 		stage.addEventListener('mouseout', function () {
 			clearCoordinateInfo();
+			self.cancelPrevSelection();
 		});
 
 		// DRAG & DROP
@@ -108,6 +96,9 @@ class Selector {
 		});
 
 		window.addEventListener('mousemove', function (event) {
+			if (event.target.getAttribute('class') === 'region_annotation') {
+				self.updateSelection(self.makeRegionAnnotationSelection(event.target, event.clientX, event.clientY));
+			}
 			if (!self.isPanEnabled() && self.selected) {
 				let targetType = self.selected.getAttribute('class');
 				let label = getLabelElement(self.selected);
@@ -191,7 +182,7 @@ class Selector {
 						self.updateLabelPosition(label, event.clientX, event.clientY);
 					}
 				}
-				updateSelection(self.selected);
+				self.updateSelection(self.selected);
 				self.offset.x = event.clientX;
 				self.offset.y = event.clientY;
 			}
@@ -340,9 +331,44 @@ class Selector {
 						}
 					}
 				}
-				updateSelection(target);
+				self.updateSelection(target);
 			}
 		});
+	}
+
+	updateSelection(element) {
+		// remove previous highlight
+		this.cancelPrevSelection();
+		if (!element.isSameNode(stage) && element.getAttribute('id') != "background_img" &&
+			(element.getAttribute('class') && !element.getAttribute('class').startsWith("svg-pan-zoom"))) {
+			this.prevHighlight = element;
+			this.prevColor = element.style.stroke;
+			element.style.stroke = "#603e3e";
+			if (this.isCircle(element)) {
+				element.style.fill = "#603e3e";
+			}
+		}
+	}
+
+	cancelPrevSelection() {
+		if (this.prevHighlight) {
+			this.prevHighlight.style.stroke = this.prevColor;
+			if (this.isCircle(this.prevHighlight)) {
+				this.prevHighlight.style.fill = this.prevColor;
+			}
+		}
+	}
+
+	isCircle(element) {
+		// return true if the element is a circle, false otherwise
+		let type = element.getAttribute('class');
+		return type && (type === "circle_annotation" || type === "region_endpoint_annotation");
+	}
+
+	isText(element) {
+		// return true if the element is a text, false otherwise
+		let type = element.getAttribute('class');
+		return type && type === "text_annotation";
 	}
 
 	dbConnected() {
@@ -452,8 +478,10 @@ class Selector {
 		let left = labelRect.left + window.pageXOffset;
 		let top = labelRect.top + window.pageYOffset;
 		if (left <= clientX && clientX <= left + labelRect.width && top <= clientY && clientY <= top + labelRect.height) {
+			region.style.cursor = "text";
 			return label;
 		}
+		region.style.cursor = "default";
 		return region;
 	}
 }

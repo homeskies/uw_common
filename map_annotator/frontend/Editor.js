@@ -124,15 +124,10 @@ class Editor {
 
 	enablePanZoom() {
         this.panZoomStage = svgPanZoom("#stage", {
-			// uncomment this to enable built-in zoom control buttons
-			// controlIconsEnabled: true,
-			panEnabled: false,
-			onZoom: function(newZoom) {
-				document.getElementById("selection").style.display = "none";
-			}, 
-			onPan: function(newPan) {
-				document.getElementById("selection").style.display = "none";
-			}}
+				// uncomment this to enable built-in zoom control buttons
+				// controlIconsEnabled: true,
+				panEnabled: false,
+			}
 		);
 		this.disablePan();
 		this.fill();
@@ -286,11 +281,11 @@ class Editor {
 		}
 		let line = document.querySelector("line, polygon");
 		if (line) {
-			result.lineWidth = line.style.strokeWidth;
+			result.lineWidth = parseFloat(line.style.strokeWidth);
 		}
 		let label = document.querySelector(".text_annotation");
 		if (label) {
-			result.labelFontSize = label.getAttribute('font-size');
+			result.labelFontSize = parseInt(label.getAttribute('font-size'));
 		}
 		result.isBoldText = document.querySelector(".text_annotation").getAttribute('font-weight') == null ||
 						 document.querySelector(".text_annotation").getAttribute('font-weight') === "normal";
@@ -388,7 +383,6 @@ class Editor {
 		this.scaleToFill = 1;
 		this.displayWidth = 0;
 		this.displayHeight = 0;
-		document.getElementById("selection").style.display = "none";
 	}
 
 	toString(svg) {
