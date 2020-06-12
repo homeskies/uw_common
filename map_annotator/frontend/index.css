@@ -3,6 +3,12 @@ body {
     font-family: sans-serif;
 }
 
+#selection {
+    position: absolute;
+	outline: solid 2px #99f;
+	pointer-events: none;
+}
+
 #title, button, .dropdown_content, .dropdown_content a {
     border-radius: 10px;
 }
@@ -28,8 +34,17 @@ input {
     width:15%;
 }
 
+#sideCtrlPanelContainer > p {
+    font-weight: bold;
+    margin-bottom: 0.6em;
+}
+
 #panZoomCtrlContainer {
     margin-top: 5em;
+}
+
+#isBoldText {
+    width: 10%;
 }
 
 /* Buttons */

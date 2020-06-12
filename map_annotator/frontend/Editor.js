@@ -189,7 +189,8 @@ class Editor {
 		let defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 		defs.id = "annotation_defs";
 
-		this.addElement(defs);
+		this.svg.prepend(defs);
+		this.svg.prepend(document.createTextNode('\n'));
 		this.addElement(unknown);
 		this.addElement(regions);
 		this.addElement(poses);
@@ -276,6 +277,26 @@ class Editor {
 		}
 	}
 
+	getStyle() {
+		// fetch all the style values from svg
+		let result = {circleRadius: 0, lineWidth: 0, labelFontSize: 0, isBoldText: false};
+		let circle = document.querySelector("circle");
+		if (circle) {
+			result.circleRadius = circle.getAttribute('r');
+		}
+		let line = document.querySelector("line, polygon");
+		if (line) {
+			result.lineWidth = line.style.strokeWidth;
+		}
+		let label = document.querySelector(".text_annotation");
+		if (label) {
+			result.labelFontSize = label.getAttribute('font-size');
+		}
+		result.isBoldText = document.querySelector(".text_annotation").getAttribute('font-weight') == null ||
+						 document.querySelector(".text_annotation").getAttribute('font-weight') === "normal";
+		return result;
+	}
+
 	resizeCircles(newRadius) {
 		let circles = document.querySelectorAll("circle");
 		for (let i = 0; i < circles.length; i++) {
@@ -287,6 +308,24 @@ class Editor {
 		let lines = document.querySelectorAll("line, polygon");
 		for (let i = 0; i < lines.length; i++) {
 			lines[i].style.strokeWidth = newWidth;
+		}
+	}
+
+	resizeLabels(newLabelFontSize) {
+		let labels = document.querySelectorAll(".text_annotation");
+		for (let i = 0; i < labels.length; i++) {
+			labels[i].setAttribute('font-size', newLabelFontSize + "px");
+		}
+	}
+
+	resetLabelFontWeight(isBoldText) {
+		let labels = document.querySelectorAll(".text_annotation");
+		for (let i = 0; i < labels.length; i++) {
+			if (isBoldText) {
+				labels[i].setAttribute('font-weight', "normal");
+			} else {
+				labels[i].setAttribute('font-weight', "lighter");
+			}
 		}
 	}
 
@@ -359,9 +398,11 @@ class Editor {
 			'width="' + this.pixelWidth + '" height="' + this.pixelHeight + '" ',
 			'viewBox="0 0 ' + this.pixelWidth + ' ' + this.pixelHeight + '\">\n'
 		].join('');
+		// save annotation defs
+		let defs ='<defs id="annotation_defs">' + svg.querySelector("#annotation_defs").innerHTML + '</defs>';
 		// remove all the pan zoom code from svg, only save the background image and annotations
 		let content = svg.querySelector(".svg-pan-zoom_viewport").innerHTML;
-		return tag + content + '</svg>';
+		return tag + defs + content + '</svg>';
 	}
 
 	setDimension(pixelWidth, pixelHeight) {

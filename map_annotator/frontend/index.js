@@ -13,10 +13,12 @@ $(function() {
     
     let circleRadius = 2;
     let lineWidth = 2;
+    let labelFontSize = 10;
+    let isBoldText = false;
+
     const LINE_LENGTH = 18;
     const INITIAL_REGION_SIZE = 50;
     const LABEL_PADDING = 20;
-    const LABEL_FONT_SIZE = "10px";
 
     const UNIT_VECTOR = new ROSLIB.Vector3({x: 0, y: 1, z: 0});
 
@@ -208,6 +210,9 @@ $(function() {
                             // read SVG file
                             let contents = event.target.result;
                             self.editor.setSVG(new DOMParser().parseFromString(contents, 'image/svg+xml'));
+                            // get the existing styles
+                            let styles = self.editor.getStyle();
+                            setStyle(styles);
                             // initialize the program state
                             initializeProgram();
                         }, false);
@@ -453,6 +458,17 @@ $(function() {
             self.editor.resizeLines(lineWidth);
         }
 
+        document.getElementById("labelFontSizeSlider").oninput = function() {
+            // update label font size
+            labelFontSize = this.value;
+            self.editor.resizeLabels(labelFontSize);
+        }
+
+        document.getElementById("isBoldText").onclick = function() {
+            isBoldText = !isBoldText;
+            self.editor.resetLabelFontWeight(isBoldText);
+        }
+
         document.getElementById("fillBtn").addEventListener('click', function() {
             self.editor.fill();
         });
@@ -671,9 +687,14 @@ $(function() {
         }
         label.setAttribute('x', x);
         label.setAttribute('y', y);
-        label.setAttribute('font-size', LABEL_FONT_SIZE);
+        label.setAttribute('font-size', labelFontSize + "px");
         label.style.stroke = color;
         label.style.fill = color;
+        if (isBoldText) {
+            label.setAttribute('font-weight', "normal");
+        } else {
+            label.setAttribute('font-weight', "lighter");
+        }
         label.textContent = defaultText;
         return label;
     }
@@ -738,6 +759,18 @@ $(function() {
         for (let i = 0; i < editorBtns.length; i++) {
             editorBtns[i].disabled = disabled;
         }
+    }
+
+    function setStyle(styles) {
+        circleRadius = styles.circleRadius != 0 ? styles.circleRadius : circleRadius;
+        lineWidth = styles.lineWidth != 0 ? styles.lineWidth : lineWidth;
+        labelFontSize = styles.labelFontSize != 0 ? styles.labelFontSize : labelFontSize;
+        isBoldText = styles.isBoldText;
+        // set the sliders to existing style values
+        document.getElementById("circleRadiusSlider").value = circleRadius;
+        document.getElementById("strokeWidthSlider").value = lineWidth;
+        document.getElementById("labelFontSizeSlider").value = labelFontSize;
+        document.getElementById("isBoldText").checked = isBoldText;
     }
 
     function markDropdownSelection(selectedItem) {

@@ -18,14 +18,6 @@ class Selector {
 		this.helpPopup = document.getElementById("helpPopup");
 		this.helpPopupContent = document.getElementById("helpPopupContent");
 
-		let selection = document.createElement('span');
-		selection.id = "selection";
-		selection.style.position = 'absolute';
-		selection.style.display = 'none';
-		selection.style.outline = 'solid 2px #99f';
-		selection.style.pointerEvents = 'none';
-		document.body.appendChild(selection);
-
 		this.offset = { x: 0, y: 0 };
 		this.selectedRegion = null;
 		this.deletedRegionIds = [];

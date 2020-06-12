@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import PoseWithCovarianceStamped
-from tf.transformations import euler_from_quaternion
-from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse, HasPoint, HasPointResponse, HasPose, HasPoseResponse, HasRegion, HasRegionResponse
-from map_annotator_msgs.msg import MapAnnotation, Point, Pose, Region
+from map_annotator_msgs.srv import GetMaps, GetMapsResponse, DeleteMap, DeleteMapResponse,\
+    HasPoint, HasPointResponse, HasPose, HasPoseResponse, HasRegion, HasRegionResponse
+from map_annotator_msgs.msg import MapAnnotation
 import knowledge_representation
-import copy
+
 
 def wait_for_time():
     """
@@ -27,7 +26,6 @@ class Server(object):
         self.has_region_srv = rospy.Service("map_annotator/has_region", HasRegion, self.has_region)
         rospy.sleep(0.5)
 
-
     def get_all_maps(self, request):
         """ Return the list of all map names in the database. """
         map_concept = self.db.get_concept("map")
@@ -37,13 +35,11 @@ class Server(object):
             map_list.append(m.get_name())
         return GetMapsResponse(map_list)
 
-
     def delete_map(self, request):
         """ Delete the requested map from database. """
         self.db.get_map(request.name).delete()
         print("Map named \"" + request.name + "\" is deleted.")
         return DeleteMapResponse()
-
 
     def has_point(self, request):
         """ Check if the given map has the given point. """
@@ -52,14 +48,12 @@ class Server(object):
             return HasPointResponse(True)
         return HasPointResponse(False)
 
-    
     def has_pose(self, request):
         """ Check if the given map has the given pose. """
         result = self.db.get_map(request.map_name).get_pose(request.pose_name)
         if result:
             return HasPoseResponse(True)
         return HasPoseResponse(False)
-
 
     def has_region(self, request):
         """ Check if the given map has the given region. """
@@ -68,13 +62,12 @@ class Server(object):
             return HasRegionResponse(True)
         return HasRegionResponse(False)
 
-
     def process_changes(self, msg):
         print("**************************************")
         print("Previous Map Name: " + msg.prev_name)
         print("Current Map Name:  " + msg.current_name)
         print("--------------------------")
-        
+
         target_map = None
         prev_map = self.has_map(msg.prev_name)
         curr_map = self.has_map(msg.current_name)
@@ -95,7 +88,7 @@ class Server(object):
                 target_map = prev_map
         else:  # make edits on current map, or create one if no such map exists
             target_map = curr_map if curr_map else self.db.get_map(msg.current_name)
-        
+
         print("--------------------------")
         print("Editing Map Named: " + str(target_map.get_name()))
         print("--------------------------")
@@ -103,10 +96,9 @@ class Server(object):
         # handle point changes
         self.process_point_changes(target_map, msg.points)
         # handle pose changes
-        self.process_pose_changes(target_map, msg.poses)  
+        self.process_pose_changes(target_map, msg.poses)
         # handle region changes
         self.process_region_changes(target_map, msg.regions)
-    
 
     def process_point_changes(self, target_map, point_changes):
         print("POINT BEFORE: ")
@@ -120,8 +112,8 @@ class Server(object):
             elif pt.deleted and curr_pt:
                 curr_pt.delete()
             elif prev_pt:
-                point_x = pt.x if pt.x != None else prev_pt.x
-                point_y = pt.y if pt.y != None else prev_pt.y
+                point_x = pt.x if pt.x is not None else prev_pt.x
+                point_y = pt.y if pt.y is not None else prev_pt.y
                 # add a new point
                 target_map.add_point(pt.current_name, point_x, point_y)
                 # delete the existing point
@@ -130,11 +122,10 @@ class Server(object):
                 if curr_pt:
                     curr_pt.delete()
                 target_map.add_point(pt.current_name, pt.x, pt.y)
-        
+
         print("POINT AFTER: ")
         self._print_all_points(target_map)
 
-    
     def process_pose_changes(self, target_map, pose_changes):
         print("POSE BEFORE: ")
         self._print_all_poses(target_map)
@@ -147,9 +138,9 @@ class Server(object):
             elif ps.deleted and curr_ps:
                 curr_ps.delete()
             elif prev_ps:
-                pose_x = ps.x if ps.x != None else prev_ps.x
-                pose_y = ps.y if ps.y != None else prev_ps.y
-                pose_theta = ps.theta if ps.theta != None else prev_ps.theta
+                pose_x = ps.x if ps.x is not None else prev_ps.x
+                pose_y = ps.y if ps.y is not None else prev_ps.y
+                pose_theta = ps.theta if ps.theta is not None else prev_ps.theta
                 # add a new pose
                 target_map.add_pose(ps.current_name, pose_x, pose_y, pose_theta)
                 # delete the existing pose
@@ -158,11 +149,10 @@ class Server(object):
                 if curr_ps:
                     curr_ps.delete()
                 target_map.add_pose(ps.current_name, ps.x, ps.y, ps.theta)
-        
+
         print("POSE AFTER: ")
         self._print_all_poses(target_map)
-        
-        
+
     def process_region_changes(self, target_map, region_changes):
         print("REGION BEFORE: ")
         self._print_all_regions(target_map)
@@ -177,7 +167,7 @@ class Server(object):
             else:
                 updated_endpoints = []
                 if prev_r:
-                    if r.endpoints != None:
+                    if r.endpoints is not None:
                         updated_endpoints = self.update_region_endpoints(prev_r.points, r.endpoints)
                     else:
                         updated_endpoints = prev_r.points
@@ -191,11 +181,10 @@ class Server(object):
                     updated_endpoints = self.update_region_endpoints(old_endpoints, r.endpoints)
                     if curr_r:
                         curr_r.delete()
-                    target_map.add_region(r.current_name, updated_endpoints)        
-        
+                    target_map.add_region(r.current_name, updated_endpoints)
+
         print("REGION AFTER: ")
         self._print_all_regions(target_map)
-
 
     def has_map(self, name):
         """ Return the map with the given name if it exists, return None otherwise. """
@@ -207,7 +196,6 @@ class Server(object):
                     return self.db.get_map(name)
         return None
 
-    
     def update_region_endpoints(self, old_endpoints, new_endpoints):
         """ 
             Combine the old list of endpoints with the list of new endpoints, 
@@ -221,17 +209,16 @@ class Server(object):
         updated_endpoints = []
         is_brand_new = True
         for i in range(size):
-            if i < new_size and new_endpoints[i] != None:
+            if i < new_size and new_endpoints[i] is not None:
                 updated_endpoints.append((new_endpoints[i].x, new_endpoints[i].y))
             elif i >= new_size and is_brand_new:
                 break
-            else: 
+            else:
                 is_brand_new = False
                 updated_endpoints.append(old_endpoints[i])
 
         return updated_endpoints
 
-    
     def _print_all_points(self, target_map):
         points = target_map.get_all_points()
         for pt in points:
@@ -239,14 +226,12 @@ class Server(object):
             print("\t" + str(pt.x) + ", " + str(pt.y))
         print("--------------------------")
 
-    
     def _print_all_poses(self, target_map):
         poses = target_map.get_all_poses()
         for ps in poses:
             print(ps.get_name())
             print("\t" + str(ps.x) + ", " + str(ps.y) + ", " + str(ps.theta))
         print("--------------------------")
-
 
     def _print_all_regions(self, target_map):
         regions = target_map.get_all_regions()
@@ -260,9 +245,9 @@ class Server(object):
 def main():
     rospy.init_node('map_annotator_node')
     wait_for_time()
-    
+
     server = Server()
-    annotation_changes_sub = rospy.Subscriber("map_annotator/changes", MapAnnotation, callback=server.process_changes)
+    rospy.Subscriber("map_annotator/changes", MapAnnotation, callback=server.process_changes)
     rospy.sleep(1)
     print("Map annotator node is running...")
 
@@ -275,4 +260,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()	
+    main()
