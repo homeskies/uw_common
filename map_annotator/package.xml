@@ -10,6 +10,7 @@
 
   <!-- The *depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
+  <build_depend>rospy</build_depend>
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend>map_annotator_msgs</buildtool_depend>
 
