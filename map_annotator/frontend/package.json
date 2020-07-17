@@ -1,0 +1,19 @@
+{
+  "name": "map_annotator",
+  "version": "1.0.0",
+  "description": "A web interface for annotating maps.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint *.js **/*.js"
+  },
+  "author": "Xinyi Wang",
+  "license": "ISC",
+  "dependencies": {
+    "js-yaml": "^3.13.1",
+    "svg-pan-zoom": "^3.6.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.4.0"
+  }
+}

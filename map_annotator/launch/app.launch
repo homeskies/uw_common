@@ -1,0 +1,6 @@
+<launch>
+  <!-- <include file="$(find uw_gazebo)/launch/house_simulation.launch" /> -->
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+
+  <node pkg="map_annotator" type="map_annotator_node.py" name="map_annotator_node"  output="screen"/>
+</launch>

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>map_annotator</name>
+  <version>0.0.0</version>
+  <description>The map_annotator package</description>
+
+  <maintainer email="wxyelaine98@gmail.com">Xinyi Wang</maintainer>
+
+  <license>MIT</license>
+
+  <!-- The *depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <build_depend>rospy</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>map_annotator_msgs</buildtool_depend>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    <appname>Map Annotator</appname>
+  </export>
+</package>
