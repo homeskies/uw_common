@@ -1,4 +1,7 @@
-class Region extends Type {
+import Type from './Type.js';
+import Point from './Point.js';
+
+export default class Region extends Type {
     constructor(name, points) {
         super(name);
         this.originalPoints = [];
@@ -10,9 +13,9 @@ class Region extends Type {
     getPoints() {
         let translatedPoints = [];
         for (let i = 0; i < this.originalPoints.length; i++) {
-            translatedPoints.push(new Point("",
-                    this.originalPoints[i].getX() + this.translateX,
-                    this.originalPoints[i].getY() + this.translateY));
+            translatedPoints.push(new Point('',
+                this.originalPoints[i].getX() + this.translateX,
+                this.originalPoints[i].getY() + this.translateY));
         }
         return translatedPoints;
     }
@@ -38,9 +41,9 @@ class Region extends Type {
         this.clear();
         for (let i = 0; i < points.length; i++) {
             if (Array.isArray(points[i])) {
-                this.originalPoints.push(new Point("", points[i][0], points[i][1]));
+                this.originalPoints.push(new Point('', points[i][0], points[i][1]));
             } else {
-                this.originalPoints.push(new Point("", points[i].getX(), points[i].getY()));
+                this.originalPoints.push(new Point('', points[i].getX(), points[i].getY()));
             }
         }
     }
@@ -50,7 +53,7 @@ class Region extends Type {
     }
 
     addOriginalPoint(x, y) {
-        this.originalPoints.push(new Point("", x, y));
+        this.originalPoints.push(new Point('', x, y));
     }
 
     setTranslate(translateX, translateY) {
@@ -59,23 +62,23 @@ class Region extends Type {
     }
 
     toString() {
-        let originalPointsStr = "";
+        let originalPointsStr = '';
         for (let i = 0; i < this.originalPoints.length; i++) {
-            originalPointsStr += "\n" + i + ": " + this.originalPoints[i].getX() + ", " + this.originalPoints[i].getY();
+            originalPointsStr += '\n' + i + ': ' + this.originalPoints[i].getX() + ', ' + this.originalPoints[i].getY();
         }
-        return super.toString() + 
-                "\nTranslate (X, Y): (" + this.translateX + ", " + this.translateY + ")" + 
-                "\nOriginal Points: " + originalPointsStr;
+        return super.toString() +
+            '\nTranslate (X, Y): (' + this.translateX + ', ' + this.translateY + ')' +
+            '\nOriginal Points: ' + originalPointsStr;
     }
 
     toHtmlString() {
-        let originalPointsStr = "";
+        let originalPointsStr = '';
         for (let i = 0; i < this.originalPoints.length; i++) {
-            originalPointsStr += "<p>" + i + ": " + 
-                    this.originalPoints[i].getX() + ", " + this.originalPoints[i].getY() + "</p>";
+            originalPointsStr += '<p>' + i + ': ' +
+                this.originalPoints[i].getX() + ', ' + this.originalPoints[i].getY() + '</p>';
         }
-        return super.toHtmlString() + 
-                "<p>Translate (X, Y): (" + this.translateX + ", " + this.translateY + ")</p>" +
-                "<p>Original Points:</p>" + originalPointsStr;
+        return super.toHtmlString() +
+            '<p>Translate (X, Y): (' + this.translateX + ', ' + this.translateY + ')</p>' +
+            '<p>Original Points:</p>' + originalPointsStr;
     }
 }

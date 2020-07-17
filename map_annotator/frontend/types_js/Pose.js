@@ -1,4 +1,6 @@
-class Pose extends Point {
+import Point from './Point.js';
+
+export default class Pose extends Point {
     constructor(name, x, y, theta) {
         super(name, x, y);
         this.theta = theta;
@@ -14,10 +16,10 @@ class Pose extends Point {
     }
 
     toString() {
-        return super.toString() + "\nTheta: " + (-this.theta);
+        return super.toString() + '\nTheta: ' + (-this.theta);
     }
 
     toHtmlString() {
-        return super.toHtmlString() + "<p>Theta: " + (-this.theta) + "</p>";
+        return super.toHtmlString() + '<p>Theta: ' + (-this.theta) + '</p>';
     }
 }

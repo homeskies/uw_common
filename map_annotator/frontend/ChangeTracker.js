@@ -1,12 +1,16 @@
-class ChangeTracker {
+import Point from './types_js/Point.js';
+import Pose from './types_js/Pose.js';
+import Region from './types_js/Region.js';
+
+export default class ChangeTracker {
     constructor(mapAnnotationTopic, editor) {
         // trackers
-        this.mapName = "";
+        this.mapName = '';
         this.pointTracker = new Map();  // point name -> Point
         this.poseTracker = new Map();   // pose name -> Pose
         this.regionTracker = new Map(); // region name -> Region
         // ROS topic
-        this.mapAnnotationTopic =mapAnnotationTopic;
+        this.mapAnnotationTopic = mapAnnotationTopic;
         // editor
         this.editor = editor;
     }
@@ -37,9 +41,9 @@ class ChangeTracker {
         return this.hasElement(this.regionTracker, name);
     }
 
-    applyPointChange(command, name, x=0, y=0, newName="") {
+    applyPointChange(command, name, x = 0, y = 0, newName = '') {
         let pointExist = this.pointTracker.has(name);
-        if (command === "save") {
+        if (command === 'save') {
             if (pointExist) {
                 let point = this.pointTracker.get(name);
                 point.setCoordinate(x, y);
@@ -47,7 +51,7 @@ class ChangeTracker {
             } else {
                 this.pointTracker.set(name, new Point(name, x, y));
             }
-        } else if (command === "delete") {
+        } else if (command === 'delete') {
             if (pointExist) {
                 this.pointTracker.get(name).setDeleted();
             } else {
@@ -55,12 +59,12 @@ class ChangeTracker {
                 point.setDeleted();
                 this.pointTracker.set(name, point);
             }
-        } else if (command === "rename") {
+        } else if (command === 'rename') {
             if (pointExist && !this.hasPoint(newName)) {
                 let point = this.pointTracker.get(name);
                 let newPoint = new Point(newName, point.getX(), point.getY());
                 this.renameElement(this.pointTracker, newPoint, point.getPrevName(), name, newName);
-            } else if (newName != name) {
+            } else if (newName !== name) {
                 let newPoint = new Point(newName, null, null);
                 newPoint.setPrevName(name);
                 this.pointTracker.set(newName, newPoint);
@@ -68,9 +72,9 @@ class ChangeTracker {
         }
     }
 
-    applyPoseChange(command, name, x=0, y=0, theta=0, newName="") {
+    applyPoseChange(command, name, x = 0, y = 0, theta = 0, newName = '') {
         let poseExist = this.poseTracker.has(name);
-        if (command === "save") {
+        if (command === 'save') {
             if (poseExist) {
                 let pose = this.poseTracker.get(name);
                 pose.setCoordinate(x, y, theta);
@@ -78,7 +82,7 @@ class ChangeTracker {
             } else {
                 this.poseTracker.set(name, new Pose(name, x, y, theta));
             }
-        } else if (command === "delete") {
+        } else if (command === 'delete') {
             if (poseExist) {
                 this.poseTracker.get(name).setDeleted();
             } else {
@@ -86,12 +90,12 @@ class ChangeTracker {
                 pose.setDeleted();
                 this.poseTracker.set(name, pose);
             }
-        } else if (command === "rename") {
+        } else if (command === 'rename') {
             if (poseExist && !this.hasPose(newName)) {
                 let pose = this.poseTracker.get(name);
                 let newPose = new Pose(newName, pose.getX(), pose.getY(), pose.getTheta());
                 this.renameElement(this.poseTracker, newPose, pose.getPrevName(), name, newName);
-            } else if (newName != name) {
+            } else if (newName !== name) {
                 let newPose = new Pose(newName, null, null, null);
                 newPose.setPrevName(name);
                 this.poseTracker.set(newName, newPose);
@@ -99,9 +103,9 @@ class ChangeTracker {
         }
     }
 
-    applyRegionChange(command, name, points=[], translateX=0, translateY=0, newName="") {
+    applyRegionChange(command, name, points = [], translateX = 0, translateY = 0, newName = '') {
         let regionExist = this.regionTracker.has(name);
-        if (command === "save") {
+        if (command === 'save') {
             if (regionExist) {
                 let region = this.regionTracker.get(name);
                 region.setOriginalPoints(points);
@@ -110,22 +114,22 @@ class ChangeTracker {
                 let newRegion = new Region(name, points);
                 this.regionTracker.set(name, newRegion);
             }
-        } else if (command === "translate") {
+        } else if (command === 'translate') {
             if (regionExist) {
                 let region = this.regionTracker.get(name);
                 region.setTranslate(translateX, translateY);
-                if (points != null) {
+                if (points !== null) {
                     region.setOriginalPoints(points);
                 }
             } else {
                 let newRegion = new Region(name, []);
                 newRegion.setTranslate(translateX, translateY);
-                if (points != null) {
+                if (points !== null) {
                     newRegion.setOriginalPoints(points);
                 }
                 this.regionTracker.set(name, newRegion);
             }
-        } else if (command === "delete") {
+        } else if (command === 'delete') {
             if (regionExist) {
                 this.regionTracker.get(name).setDeleted();
             } else {
@@ -133,12 +137,12 @@ class ChangeTracker {
                 region.setDeleted();
                 this.regionTracker.set(name, region);
             }
-        } else if (command === "rename") {
+        } else if (command === 'rename') {
             if (regionExist && !this.hasRegion(newName)) {
                 let region = this.regionTracker.get(name);
                 let newRegion = new Region(newName, region.getOriginalPoints());
                 this.renameElement(this.regionTracker, newRegion, region.getPrevName(), name, newName);
-            } else if (newName != name) {
+            } else if (newName !== name) {
                 let newRegion = new Region(newName, []);
                 newRegion.setPrevName(name);
                 this.regionTracker.set(newName, newRegion);
@@ -189,7 +193,7 @@ class ChangeTracker {
     }
 
     renameElement(tracker, element, prevName, currentName, newName) {
-        if (prevName != "") {
+        if (prevName !== '') {
             element.setPrevName(prevName);
         } else {
             element.setPrevName(currentName);
@@ -200,15 +204,15 @@ class ChangeTracker {
 
     getChanges() {
         // return a string of all the tracked changes
-        let str = "<h3>POINTS:</h3>";
+        let str = '<h3>POINTS:</h3>';
         for (let [k, v] of this.pointTracker) {
             str += v.toHtmlString();
         }
-        str += "<h3>POSES:</h3>";
+        str += '<h3>POSES:</h3>';
         for (let [k, v] of this.poseTracker) {
             str += v.toHtmlString();
         }
-        str += "<h3>REGION:</h3>";
+        str += '<h3>REGION:</h3>';
         for (let [k, v] of this.regionTracker) {
             str += v.toHtmlString();
         }
@@ -231,7 +235,7 @@ class ChangeTracker {
         this.regionTracker.set(regionName, newRegion);
     }
 
-    publishChanges(prevName, currentName, saveAs=false) {
+    publishChanges(prevName, currentName, saveAs = false) {
         let points = [];
         for (let [k, v] of this.pointTracker) {
             points.push(this.getPointMsg(v));

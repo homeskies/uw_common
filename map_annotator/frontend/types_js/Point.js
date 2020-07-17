@@ -1,4 +1,6 @@
-class Point extends Type {
+import Type from './Type.js';
+
+export default class Point extends Type {
     constructor(name, x, y) {
         super(name);
         this.x = x;
@@ -19,10 +21,10 @@ class Point extends Type {
     }
 
     toString() {
-        return super.toString() + "\nX, Y: (" + this.x + ", " + this.y + ")";
+        return super.toString() + '\nX, Y: (' + this.x + ', ' + this.y + ')';
     }
 
     toHtmlString() {
-        return super.toHtmlString() + "<p>X, Y: (" + this.x + ", " + this.y + ")</p>";
+        return super.toHtmlString() + '<p>X, Y: (' + this.x + ', ' + this.y + ')</p>';
     }
 }

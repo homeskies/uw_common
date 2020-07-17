@@ -1,16 +1,20 @@
-"use strict";
+'use strict';
+import Editor from './Editor.js';
+import Selector from './Selector.js';
+import {getTranslate, promptForName, convertToString, getRandomInteger, convertToList, getRegionId, getLabelElement, showPopup} from './utils.js';
+import ChangeTracker from './ChangeTracker.js';
 
-$(function() {
+$(function () {
     const NS = 'http://www.w3.org/2000/svg';
-    const HIGHLIGHT = "#ffc30b";
-    const WHITE = "#ffffff";
-    const DARK_GREY = "#666666";
-    const RED = "#f10000";
-    const BLUE = "#4c4cff";
-    const YELLOW = "#ffd700";
-    const DARK_YELLOW = "#998100";
-    const GREEN = "#a7c44c";
-    
+    const HIGHLIGHT = '#ffc30b';
+    const WHITE = '#ffffff';
+    const DARK_GREY = '#666666';
+    const RED = '#f10000';
+    const BLUE = '#4c4cff';
+    const YELLOW = '#ffd700';
+    const DARK_YELLOW = '#998100';
+    const GREEN = '#a7c44c';
+
     let circleRadius = 2;
     let lineWidth = 2;
     let labelFontSize = 10;
@@ -30,55 +34,56 @@ $(function() {
     let regionCount = -1;
     let unusedRegionId = [];
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         // ELEMENTS
         // General controls
-        this.statusBar = document.getElementById("statusBar");
-        this.loadYaml = document.getElementById("loadYaml");
-        this.loadImage = document.getElementById("loadImage");
-        let title = document.getElementById("title");
-        this.dbManageBtn = document.getElementById("manageDb");
-        this.saveBtn = document.getElementById("save");
-        let clear = document.getElementById("clear");
+        this.statusBar = document.getElementById('statusBar');
+        this.loadYaml = document.getElementById('loadYaml');
+        this.loadImage = document.getElementById('loadImage');
+        let title = document.getElementById('title');
+        this.titleDisplay = title;
+        this.dbManageBtn = document.getElementById('manageDb');
+        this.saveBtn = document.getElementById('save');
+        let clear = document.getElementById('clear');
 
         // Program state variables
-        title.value = "Please upload a .yaml file to begin";
+        title.value = 'Please upload a .yaml file to begin';
         this.yamlUploaded = false;
-        this.prevName = "";
+        this.prevName = '';
         this.dbConnected = false;
 
         // Editor buttons
-        let selectedShape = "Point";
-        this.shapeTypeBtn = document.getElementById("shapeTypeBtn");
-        this.addShapeBtn = document.getElementById("add");
-        this.deleteShapeBtn = document.getElementById("delete");
-        this.addEndpoint = document.getElementById("addEndpoint");
-        this.deleteEndpoint = document.getElementById("deleteEndpoint");
-        this.exitRegionEditor = document.getElementById("exitRegionEditor");
+        let selectedShape = 'Point';
+        this.shapeTypeBtn = document.getElementById('shapeTypeBtn');
+        this.addShapeBtn = document.getElementById('add');
+        this.deleteShapeBtn = document.getElementById('delete');
+        this.addEndpoint = document.getElementById('addEndpoint');
+        this.deleteEndpoint = document.getElementById('deleteEndpoint');
+        this.exitRegionEditor = document.getElementById('exitRegionEditor');
 
         // Svg and canvas
-        this.stage = document.getElementById("stage");
+        this.stage = document.getElementById('stage');
         let canvas = document.getElementById('canvas');
-        
+
         // Popup controls
-        document.getElementById("manageDbPopupCloseBtn").addEventListener("click", closeManageDbPopup);
-        document.getElementById("helpPopupCloseBtn").addEventListener("click", closeHelpPopup);
-        document.getElementById("trackerPopupCloseBtn").addEventListener("click", closeTrackerPopup);
-        this.disableDiv = document.getElementById("disableDiv");
-        this.manageDbPopup = document.getElementById("manageDbPopup");
-        this.mapListContainer = document.getElementById("mapList");
-        this.savePopup = document.getElementById("savePopup");
-        let rename = document.getElementById("rename");
-        let saveAs = document.getElementById("saveAs");
-        this.helpPopup = document.getElementById("helpPopup");
-        this.helpPopupContent = document.getElementById("helpPopupContent");
-        this.trackerPopup = document.getElementById("trackerPopup");
-        this.trackerPopupContent = document.getElementById("trackerPopupContent");
+        document.getElementById('manageDbPopupCloseBtn').addEventListener('click', closeManageDbPopup);
+        document.getElementById('helpPopupCloseBtn').addEventListener('click', closeHelpPopup);
+        document.getElementById('trackerPopupCloseBtn').addEventListener('click', closeTrackerPopup);
+        this.disableDiv = document.getElementById('disableDiv');
+        this.manageDbPopup = document.getElementById('manageDbPopup');
+        this.mapListContainer = document.getElementById('mapList');
+        this.savePopup = document.getElementById('savePopup');
+        let rename = document.getElementById('rename');
+        let saveAs = document.getElementById('saveAs');
+        this.helpPopup = document.getElementById('helpPopup');
+        this.helpPopupContent = document.getElementById('helpPopupContent');
+        this.trackerPopup = document.getElementById('trackerPopup');
+        this.trackerPopupContent = document.getElementById('trackerPopupContent');
 
         // Main parts
         this.editor = new Editor();
         this.editor.setup(this.stage, canvas);
-        
+
         // ROS setup
         let websocketUrl = (function () {
             let hostname = window.location.hostname;
@@ -92,17 +97,17 @@ $(function() {
             url: websocketUrl
         });
         this.ros.on('error', function (error) {
-            self.statusBar.innerHTML = "Error connecting to ROS websocket server.";
+            self.statusBar.innerHTML = 'Error connecting to ROS websocket server.';
             self.statusBar.style.color = RED;
             // remove the robot pose annotation
             self.editor.removeRobotPoseAnnotation(null);
         });
         this.ros.on('connection', function () {
-            self.statusBar.innerHTML = "Connected to ROS!";
+            self.statusBar.innerHTML = 'Connected to ROS!';
             self.statusBar.style.color = GREEN;
         });
         this.ros.on('close', function (error) {
-            self.statusBar.innerHTML = "No connection to ROS.";
+            self.statusBar.innerHTML = 'No connection to ROS.';
             self.statusBar.style.color = DARK_YELLOW;
             // remove the robot pose annotation
             self.editor.removeRobotPoseAnnotation(null);
@@ -110,40 +115,40 @@ $(function() {
         // ROS topic
         let mapAnnotationTopic = new ROSLIB.Topic({
             ros: self.ros,
-            name: "map_annotator/changes",
-            messageType: "map_annotator_msgs/MapAnnotation"
+            name: 'map_annotator/changes',
+            messageType: 'map_annotator_msgs/MapAnnotation'
         });
         let robotPositionTopic = new ROSLIB.Topic({
             ros: self.ros,
-            name: "amcl_pose",
-            messageType: "geometry_msgs/PoseWithCovarianceStamped"
+            name: 'amcl_pose',
+            messageType: 'geometry_msgs/PoseWithCovarianceStamped'
         });
         robotPositionTopic.subscribe(displayRobotPosition);
         // ROS service
         this.getMapsService = new ROSLIB.Service({
             ros: self.ros,
-            name: "map_annotator/get_maps",
-            serviceType: "map_annotator_msgs/GetMaps"
+            name: 'map_annotator/get_maps',
+            serviceType: 'map_annotator_msgs/GetMaps'
         });
         this.deleteMapService = new ROSLIB.Service({
             ros: self.ros,
-            name: "map_annotator/delete_map",
-            serviceType: "map_annotator_msgs/DeleteMap"
+            name: 'map_annotator/delete_map',
+            serviceType: 'map_annotator_msgs/DeleteMap'
         });
         this.hasPointService = new ROSLIB.Service({
             ros: self.ros,
-            name: "map_annotator/has_point",
-            serviceType: "map_annotator_msgs/HasPoint"
+            name: 'map_annotator/has_point',
+            serviceType: 'map_annotator_msgs/HasPoint'
         });
         this.hasPoseService = new ROSLIB.Service({
             ros: self.ros,
-            name: "map_annotator/has_pose",
-            serviceType: "map_annotator_msgs/HasPose"
+            name: 'map_annotator/has_pose',
+            serviceType: 'map_annotator_msgs/HasPose'
         });
         this.hasRegionService = new ROSLIB.Service({
             ros: self.ros,
-            name: "map_annotator/has_region",
-            serviceType: "map_annotator_msgs/HasRegion"
+            name: 'map_annotator/has_region',
+            serviceType: 'map_annotator_msgs/HasRegion'
         });
 
         // Main parts
@@ -155,7 +160,7 @@ $(function() {
         setEditorButtonStatus(true);
 
         // CONNECT/DISCONNECT TO DATABASE
-        document.getElementById("connectDb").addEventListener('click', toggleDbConnection);
+        document.getElementById('connectDb').addEventListener('click', toggleDbConnection);
 
         // MANAGE DATABASE
         this.dbManageBtn.addEventListener('click', showManageDbPopup);
@@ -182,12 +187,12 @@ $(function() {
                     // parse YAML file content to JSON
                     let contentsJSON = jsyaml.load(contents);
                     self.editor.setYAML(contentsJSON);
-                    let fileNameArr = contentsJSON["image"].split(".")[0].split("/");
+                    let fileNameArr = contentsJSON['image'].split('.')[0].split('/');
                     title.value = fileNameArr[fileNameArr.length - 1];
                     // enable image upload
                     self.yamlUploaded = true;
-                    self.loadYaml.style.display = "none";
-                    self.loadImage.style.display = "inline-block";
+                    self.loadYaml.style.display = 'none';
+                    self.loadImage.style.display = 'inline-block';
                     clear.disabled = false;
                     setEditorButtonStatus(true);
                     // enable clear button
@@ -201,8 +206,8 @@ $(function() {
                     self.prevName = title.value;
                     self.yamlUploaded = false;
                     setEditorButtonStatus(false);
-                    self.loadYaml.style.display = "inline-block";
-                    self.loadImage.style.display = "none";
+                    self.loadYaml.style.display = 'inline-block';
+                    self.loadImage.style.display = 'none';
                     self.stage.style.borderColor = DARK_GREY;
                     if (fileSuffix === 'svg') {  // file uploaded is SVG
                         let reader = new FileReader();
@@ -231,19 +236,19 @@ $(function() {
                         form.reset();
                     }
                 } else {
-                    showHelpPopup("Please upload a PGM or SVG file!");
+                    showHelpPopup('Please upload a PGM or SVG file!');
                 }
             } else {
-                showHelpPopup("Please upload a YAML file!");
+                showHelpPopup('Please upload a YAML file!');
             }
         });
         form.appendChild(input);
 
-        document.getElementById("loadYaml").addEventListener('click', function () {
+        document.getElementById('loadYaml').addEventListener('click', function () {
             input.click();
         });
 
-        document.getElementById("loadImage").addEventListener('click', function () {
+        document.getElementById('loadImage').addEventListener('click', function () {
             input.click();
         });
 
@@ -253,13 +258,13 @@ $(function() {
         document.body.appendChild(link);
 
         this.saveBtn.addEventListener('click', function () {
-            if (confirm("Are you sure you want to SAVE the changes?")) {
+            if (confirm('Are you sure you want to SAVE the changes?')) {
                 // create a clone of the SVG node so we don't mess the original one
                 let clone = self.editor.cloneStage();
                 // remove the robot pose from the cloned SVG
                 self.editor.removeRobotPoseAnnotation(clone);
                 // download SVG
-                let svgBlob = new Blob([self.editor.toString(clone)], { type: 'image/svg+xml;charset=utf-8' });
+                let svgBlob = new Blob([self.editor.toString(clone)], {type: 'image/svg+xml;charset=utf-8'});
                 link.href = URL.createObjectURL(svgBlob);
                 link.download = title.value + '.svg';
                 link.click();
@@ -267,7 +272,7 @@ $(function() {
                 if (self.dbConnected) {
                     // publish all the changes to ROS node to save everything to database
                     if (self.prevName === title.value) {
-                        self.changeTracker.publishChanges("", title.value);
+                        self.changeTracker.publishChanges('', title.value);
                         resetAfterSaving();
                     } else {
                         // ask the user if they want to rename the file or make a copy?
@@ -276,7 +281,7 @@ $(function() {
                 } else {  // only download a local copy
                     resetAfterSaving();
                 }
-            }           
+            }
         });
 
         // Rename
@@ -288,7 +293,7 @@ $(function() {
 
         // Save as
         saveAs.addEventListener('click', function () {
-            self.changeTracker.publishChanges(self.prevName, title.value, saveAs=true);
+            self.changeTracker.publishChanges(self.prevName, title.value, saveAs = true);
             closeSavePopup();
             resetAfterSaving();
         });
@@ -296,39 +301,39 @@ $(function() {
         // CLEAR
         clear.addEventListener('click', function () {
             if (self.yamlUploaded) {
-                if (confirm("Are you sure you want to upload a new YAML file?")) {
+                if (confirm('Are you sure you want to upload a new YAML file?')) {
                     // clear the uploaded yaml file, let the user to choose a new yaml file to upload
                     clearEditor();
                 }
-            } else if (confirm("Are you sure you want to DISCARD all the annotations?")) {
+            } else if (confirm('Are you sure you want to DISCARD all the annotations?')) {
                 clearAnnotations();
             }
         });
 
         // SHOW CHANGES
-        document.getElementById("showChanges").addEventListener('click', function () {
+        document.getElementById('showChanges').addEventListener('click', function () {
             let changes = self.changeTracker.getChanges();
             showTrackerPopup(changes);
         });
 
         // EDITOR
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', function () {
             // resize the editor view
             self.editor.resizeView();
         });
 
-        let shapeTypeDropdownList = document.querySelectorAll(".dropdown_content a");
+        let shapeTypeDropdownList = document.querySelectorAll('.dropdown_content a');
         for (let i = 0; i < shapeTypeDropdownList.length; i++) {
-            shapeTypeDropdownList[i].addEventListener("click", function() {
+            shapeTypeDropdownList[i].addEventListener('click', function () {
                 selectedShape = markDropdownSelection(this);
             });
         }
 
         this.addShapeBtn.addEventListener('click', function () {
             // add the selected shape
-            if (selectedShape === "Point") {
+            if (selectedShape === 'Point') {
                 addPoint();
-            } else if (selectedShape === "Pose") {
+            } else if (selectedShape === 'Pose') {
                 addPose();
             } else {
                 addRegion();
@@ -337,38 +342,38 @@ $(function() {
 
         this.addShapeBtn.addEventListener('mouseover', function () {
             // show tooltip
-            if (selectedShape === "Point") {
-                showTooltip("add", "Drag & drop to move the point.</br>Press \"SHIFT\" & drag to move the label.");
-            } else if (selectedShape === "Pose") {
-                showTooltip("add", "Drag & drop to move the pose.</br>Press \"SHIFT\" & drag the pose to change orientation." +
-                            "</br>Press \"SHIFT\" & drag to move the label");
-            } else if (selectedShape === "Region"){
-                showTooltip("add", "Click this button to add regions.</br>Press \"SHIFT\" & click on the region to edit it." +
-                            "</br>Press \"SHIFT\" & drag to move the label");
+            if (selectedShape === 'Point') {
+                showTooltip('add', 'Drag & drop to move the point.</br>Press "SHIFT" & drag to move the label.');
+            } else if (selectedShape === 'Pose') {
+                showTooltip('add', 'Drag & drop to move the pose.</br>Press "SHIFT" & drag the pose to change orientation.' +
+                    '</br>Press "SHIFT" & drag to move the label');
+            } else if (selectedShape === 'Region') {
+                showTooltip('add', 'Click this button to add regions.</br>Press "SHIFT" & click on the region to edit it.' +
+                    '</br>Press "SHIFT" & drag to move the label');
             }
         });
 
         this.addShapeBtn.addEventListener('mouseout', function () {
-            hideTooltip("add");
+            hideTooltip('add');
         });
 
         this.deleteShapeBtn.addEventListener('click', function () {
-            if (this.innerHTML === "Delete") {
+            if (this.innerHTML === 'Delete') {
                 // delete the selected shape
-                this.innerHTML = "DONE";
+                this.innerHTML = 'DONE';
                 this.style.backgroundColor = HIGHLIGHT;
                 self.addShapeBtn.disabled = true;
                 self.shapeTypeBtn.disabled = true;
-                if (selectedShape === "Point") {
-                    self.selector.enterShapeDeleteMode("circle_annotation");
-                } else if (selectedShape === "Pose") {
-                    self.selector.enterShapeDeleteMode("pose_line_annotation");
+                if (selectedShape === 'Point') {
+                    self.selector.enterShapeDeleteMode('circle_annotation');
+                } else if (selectedShape === 'Pose') {
+                    self.selector.enterShapeDeleteMode('pose_line_annotation');
                 } else {  // Region
-                    self.selector.enterShapeDeleteMode("region_annotation");
+                    self.selector.enterShapeDeleteMode('region_annotation');
                 }
             } else {
                 // exit the delete mode
-                this.innerHTML = "Delete";
+                this.innerHTML = 'Delete';
                 this.style.backgroundColor = WHITE;
                 self.addShapeBtn.disabled = false;
                 self.shapeTypeBtn.disabled = false;
@@ -377,28 +382,28 @@ $(function() {
         });
 
         this.deleteShapeBtn.addEventListener('mouseover', function () {
-            if (this.innerHTML === "Delete") {
-                if (selectedShape === "Point") {
-                    showTooltip("delete", "Click on the point you want to delete.");
-                } else if (selectedShape === "Pose") {
-                    showTooltip("delete", "Click on the pose you want to delete.");
+            if (this.innerHTML === 'Delete') {
+                if (selectedShape === 'Point') {
+                    showTooltip('delete', 'Click on the point you want to delete.');
+                } else if (selectedShape === 'Pose') {
+                    showTooltip('delete', 'Click on the pose you want to delete.');
                 } else {  // Region
-                    showTooltip("delete", "Click on the region you want to delete.");
+                    showTooltip('delete', 'Click on the region you want to delete.');
                 }
             }
         });
 
         this.deleteShapeBtn.addEventListener('mouseout', function () {
-            hideTooltip("delete");
+            hideTooltip('delete');
         });
 
-        this.addEndpoint.addEventListener('click', function() {
+        this.addEndpoint.addEventListener('click', function () {
             let selectedRegion = self.selector.getSelectedRegion();
-            if (selectedRegion != null) {
+            if (selectedRegion !== null) {
                 let stringOfPrevPoints = selectedRegion.getAttribute('points');
                 let prevPoints = convertToList(stringOfPrevPoints);
                 let newPoint = getNewEndpoint(prevPoints);
-                selectedRegion.setAttribute('points', stringOfPrevPoints + " " + newPoint[0] + "," + newPoint[1]);
+                selectedRegion.setAttribute('points', stringOfPrevPoints + ' ' + newPoint[0] + ',' + newPoint[1]);
                 // mark the new end point with a circle
                 let regionId = getRegionId(selectedRegion);
                 let circle = makeCircle(regionId, prevPoints.length, 'region_endpoint_annotation', newPoint[0], newPoint[1], DARK_YELLOW);
@@ -408,23 +413,23 @@ $(function() {
                 // always update the list of points and translate
                 let points = convertToList(selectedRegion.getAttribute('points'));
                 let translate = getTranslate(selectedRegion.parentElement.getAttribute('transform'));
-                self.changeTracker.applyRegionChange("translate", regionName, points, translate[0], translate[1]);
+                self.changeTracker.applyRegionChange('translate', regionName, points, translate[0], translate[1]);
             } else {
-                showHelpPopup("Please select a region first!");
+                showHelpPopup('Please select a region first!');
             }
         });
 
-        this.deleteEndpoint.addEventListener('click', function() {
-            if (this.innerHTML === "Delete Endpoint") {
+        this.deleteEndpoint.addEventListener('click', function () {
+            if (this.innerHTML === 'Delete Endpoint') {
                 // delete the selected endpoint
-                this.innerHTML = "DONE";
+                this.innerHTML = 'DONE';
                 this.style.backgroundColor = HIGHLIGHT;
                 self.addEndpoint.disabled = true;
                 self.exitRegionEditor.disabled = true;
                 self.selector.enterEndpointDeleteMode();
             } else {
                 // exit the endpoint delete mode
-                this.innerHTML = "Delete Endpoint";
+                this.innerHTML = 'Delete Endpoint';
                 this.style.backgroundColor = WHITE;
                 self.addEndpoint.disabled = false;
                 self.exitRegionEditor.disabled = false;
@@ -432,49 +437,49 @@ $(function() {
             }
         });
 
-        this.deleteEndpoint.addEventListener('mouseover', function() {
-            if (this.innerHTML === "Delete Endpoint") {
-                showTooltip("deleteEndpoint", "Press \"SHIFT\" and click on the endpoint</br>to delete it.");
+        this.deleteEndpoint.addEventListener('mouseover', function () {
+            if (this.innerHTML === 'Delete Endpoint') {
+                showTooltip('deleteEndpoint', 'Press "SHIFT" and click on the endpoint</br>to delete it.');
             }
         });
 
         this.deleteEndpoint.addEventListener('mouseout', function () {
-            hideTooltip("deleteEndpoint");
+            hideTooltip('deleteEndpoint');
         });
 
-        this.exitRegionEditor.addEventListener('click', function() {
+        this.exitRegionEditor.addEventListener('click', function () {
             self.selector.exitRegionEditor();
         });
 
-        document.getElementById("circleRadiusSlider").oninput = function() {
+        document.getElementById('circleRadiusSlider').oninput = function () {
             // update circle radius
             circleRadius = this.value;
             self.editor.resizeCircles(circleRadius);
-        }
+        };
 
-        document.getElementById("strokeWidthSlider").oninput = function() {
+        document.getElementById('strokeWidthSlider').oninput = function () {
             // update line width
             lineWidth = this.value;
             self.editor.resizeLines(lineWidth);
-        }
+        };
 
-        document.getElementById("labelFontSizeSlider").oninput = function() {
+        document.getElementById('labelFontSizeSlider').oninput = function () {
             // update label font size
             labelFontSize = this.value;
             self.editor.resizeLabels(labelFontSize);
-        }
+        };
 
-        document.getElementById("isBoldText").onclick = function() {
+        document.getElementById('isBoldText').onclick = function () {
             isBoldText = !isBoldText;
             self.editor.resetLabelFontWeight(isBoldText);
-        }
+        };
 
-        document.getElementById("fillBtn").addEventListener('click', function() {
+        document.getElementById('fillBtn').addEventListener('click', function () {
             self.editor.fill();
         });
 
-        document.getElementById("panSwitchBtn").addEventListener('click', function() {
-            if (this.innerHTML === "Pan ON") {  // turn on pan
+        document.getElementById('panSwitchBtn').addEventListener('click', function () {
+            if (this.innerHTML === 'Pan ON') {  // turn on pan
                 self.editor.enablePan();
             } else {  // turn off pan
                 self.editor.disablePan();
@@ -483,8 +488,8 @@ $(function() {
     });
 
     function addPoint() {
-        let labelName = promptForName("point");
-        if (labelName != "") {
+        let labelName = promptForName('point');
+        if (labelName !== '') {
             if (!self.changeTracker.hasPoint(labelName)) {
                 if (self.dbConnected) {
                     // check if the point already exists in the database
@@ -496,21 +501,21 @@ $(function() {
                         if (!result.result) {
                             addPointWithName(labelName);
                         } else {
-                            showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                            showHelpPopup('The point named "' + labelName + '" already exists!');
                         }
                     });
                 } else {
                     addPointWithName(labelName);
                 }
             } else {
-                showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                showHelpPopup('The point named "' + labelName + '" already exists!');
             }
         }
     }
 
     function addPose() {
-        let labelName = promptForName("pose");
-        if (labelName != "") {
+        let labelName = promptForName('pose');
+        if (labelName !== '') {
             if (!self.changeTracker.hasPose(labelName)) {
                 if (self.dbConnected) {
                     // check if the pose already exists in the database
@@ -522,21 +527,21 @@ $(function() {
                         if (!result.result) {
                             addPoseWithName(labelName);
                         } else {
-                            showHelpPopup("The point named \"" + labelName + "\" already exists!");
+                            showHelpPopup('The point named "' + labelName + '" already exists!');
                         }
                     });
                 } else {
                     addPoseWithName(labelName);
                 }
             } else {
-                showHelpPopup("The pose named \"" + labelName + "\" already exists!");
+                showHelpPopup('The pose named "' + labelName + '" already exists!');
             }
         }
     }
 
     function addRegion() {
-        let labelName = promptForName("region");
-        if (labelName != "") {
+        let labelName = promptForName('region');
+        if (labelName !== '') {
             if (!self.changeTracker.hasRegion(labelName)) {
                 if (self.dbConnected) {
                     // check if the region already exists in the database
@@ -548,14 +553,14 @@ $(function() {
                         if (!result.result) {
                             addRegionWithName(labelName);
                         } else {
-                            showHelpPopup("The region named \"" + labelName + "\" already exists!");
+                            showHelpPopup('The region named "' + labelName + '" already exists!');
                         }
                     });
                 } else {
                     addRegionWithName(labelName);
                 }
             } else {
-                showHelpPopup("The region named \"" + labelName + "\" already exists!");
+                showHelpPopup('The region named "' + labelName + '" already exists!');
             }
         }
     }
@@ -569,10 +574,10 @@ $(function() {
         hideAllTooltips();
         self.editor.clear();
         self.changeTracker.reset();
-        title.value = "Please upload a .yaml file to begin";
-        self.prevName = "";
-        self.loadYaml.style.display = "inline-block";
-        self.loadImage.style.display = "none";
+        self.titleDisplay.value = 'Please upload a .yaml file to begin';
+        self.prevName = '';
+        self.loadYaml.style.display = 'inline-block';
+        self.loadImage.style.display = 'none';
         self.yamlUploaded = false;
         self.stage.style.borderColor = WHITE;
     }
@@ -591,7 +596,7 @@ $(function() {
             let theta = Math.atan2(UNIT_VECTOR.y, UNIT_VECTOR.x) - Math.atan2(t.y, t.x);
 
             // display the pose
-            let robotPose = self.stage.getElementById("robotPose");
+            let robotPose = self.stage.getElementById('robotPose');
             let labelY = y + LINE_LENGTH + LABEL_PADDING;
             let poseX2 = x + LINE_LENGTH * Math.cos(theta);
             let poseY2 = y + LINE_LENGTH * Math.sin(theta);
@@ -606,15 +611,15 @@ $(function() {
                 poseLine.setAttribute('y2', poseY2);
             } else {  // add a new robot pose
                 let poseGroup = document.createElementNS(NS, 'g');
-                poseGroup.id = "robotPose";
-                let label = makeLabel(x, labelY, GREEN, "Robot");
+                poseGroup.id = 'robotPose';
+                let label = makeLabel(x, labelY, GREEN, 'Robot');
                 poseGroup.appendChild(label);
                 // arrow head
-                self.editor.addArrowHead(GREEN, "robotpose_arrowhead_def");
+                self.editor.addArrowHead(GREEN, 'robotpose_arrowhead_def');
                 // arrow line
-                let arrowline = makeArrowline(x, y, poseX2, poseY2, "robotpose_arrowhead_def", GREEN);
+                let arrowline = makeArrowline(x, y, poseX2, poseY2, 'robotpose_arrowhead_def', GREEN);
                 poseGroup.appendChild(arrowline);
-                self.editor.addElementOfType("unknown", poseGroup);
+                self.editor.addElementOfType('unknown', poseGroup);
             }
         }
     }
@@ -628,8 +633,8 @@ $(function() {
         pointGroup.appendChild(label);
         let circle = makeCircle(-1, -1, 'circle_annotation', midpointX, midpointY, RED);
         pointGroup.appendChild(circle);
-        self.editor.addElementOfType("points", pointGroup);
-        self.changeTracker.applyPointChange("save", labelName, midpointX, midpointY);
+        self.editor.addElementOfType('points', pointGroup);
+        self.changeTracker.applyPointChange('save', labelName, midpointX, midpointY);
     }
 
     function addPoseWithName(labelName) {
@@ -637,12 +642,12 @@ $(function() {
         let label = makeLabel(midpointX, midpointY + LINE_LENGTH + LABEL_PADDING, BLUE, labelName);
         poseGroup.appendChild(label);
         // arrow head
-        self.editor.addArrowHead(BLUE, "arrowhead_def");
+        self.editor.addArrowHead(BLUE, 'arrowhead_def');
         // arrow line
-        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, "arrowhead_def", BLUE);
+        let arrowline = makeArrowline(midpointX, midpointY, midpointX + LINE_LENGTH, midpointY, 'arrowhead_def', BLUE);
         poseGroup.appendChild(arrowline);
-        self.editor.addElementOfType("poses", poseGroup);
-        self.changeTracker.applyPoseChange("save", labelName, midpointX, midpointY, 0);
+        self.editor.addElementOfType('poses', poseGroup);
+        self.changeTracker.applyPoseChange('save', labelName, midpointX, midpointY, 0);
     }
 
     function addRegionWithName(labelName) {
@@ -654,16 +659,16 @@ $(function() {
             regionId = regionCount;
         }
         let regionGroup = document.createElementNS(NS, 'g');
-        regionGroup.setAttribute("transform", "translate(0, 0)");
+        regionGroup.setAttribute('transform', 'translate(0, 0)');
         // the region label position is relative to endpoint #0
         let label = makeLabel(midpointX, midpointY - LABEL_PADDING, DARK_YELLOW, labelName);
         regionGroup.appendChild(label);
         // add a square to start
         let basicRegion = document.createElementNS(NS, 'polygon');
-        let points = [[midpointX, midpointY], 
-                      [midpointX + INITIAL_REGION_SIZE, midpointY],
-                      [midpointX + INITIAL_REGION_SIZE, midpointY + INITIAL_REGION_SIZE],
-                      [midpointX, midpointY + INITIAL_REGION_SIZE]];
+        let points = [[midpointX, midpointY],
+            [midpointX + INITIAL_REGION_SIZE, midpointY],
+            [midpointX + INITIAL_REGION_SIZE, midpointY + INITIAL_REGION_SIZE],
+            [midpointX, midpointY + INITIAL_REGION_SIZE]];
         basicRegion.setAttribute('class', 'region_annotation');
         basicRegion.setAttribute('points', convertToString(points));
         basicRegion.style.fill = 'transparent';
@@ -676,24 +681,24 @@ $(function() {
             let circle = makeCircle(regionId, i, 'region_endpoint_annotation', point[0], point[1], DARK_YELLOW);
             regionGroup.appendChild(circle);
         }
-        self.editor.addElementOfType("regions", regionGroup);
-        self.changeTracker.applyRegionChange("save", labelName, points);
+        self.editor.addElementOfType('regions', regionGroup);
+        self.changeTracker.applyRegionChange('save', labelName, points);
     }
-    
+
     function makeLabel(x, y, color, defaultText) {
         let label = document.createElementNS(NS, 'text');
-        if (color != GREEN) {
+        if (color !== GREEN) {
             label.setAttribute('class', 'text_annotation');
         }
         label.setAttribute('x', x);
         label.setAttribute('y', y);
-        label.setAttribute('font-size', labelFontSize + "px");
+        label.setAttribute('font-size', labelFontSize + 'px');
         label.style.stroke = color;
         label.style.fill = color;
         if (isBoldText) {
-            label.setAttribute('font-weight', "normal");
+            label.setAttribute('font-weight', 'normal');
         } else {
-            label.setAttribute('font-weight', "lighter");
+            label.setAttribute('font-weight', 'lighter');
         }
         label.textContent = defaultText;
         return label;
@@ -702,7 +707,7 @@ $(function() {
     function makeCircle(regionId, pointId, className, cx, cy, color) {
         let circle = document.createElementNS(NS, 'circle');
         if (regionId >= 0) {  // add an id number to the circle
-            circle.setAttribute('id', regionId + "-" + pointId);
+            circle.setAttribute('id', regionId + '-' + pointId);
         }
         circle.setAttribute('class', className);
         circle.setAttribute('cx', cx);
@@ -715,7 +720,7 @@ $(function() {
 
     function makeArrowline(x1, y1, x2, y2, arrowMarkerId, color) {
         let arrowline = document.createElementNS(NS, 'line');
-        if (color != GREEN) {
+        if (color !== GREEN) {
             arrowline.setAttribute('class', 'pose_line_annotation');
         } else {
             arrowline.setAttribute('class', 'robot_pose_line_annotation');
@@ -724,7 +729,7 @@ $(function() {
         arrowline.setAttribute('y1', y1);
         arrowline.setAttribute('x2', x2);
         arrowline.setAttribute('y2', y2);
-        arrowline.setAttribute('marker-end', "url(#" + arrowMarkerId + ")");
+        arrowline.setAttribute('marker-end', 'url(#' + arrowMarkerId + ')');
         arrowline.style.stroke = color;
         arrowline.style.strokeWidth = lineWidth;
         return arrowline;
@@ -748,60 +753,60 @@ $(function() {
     function initializeProgram() {
         // reset the change tracker
         self.changeTracker.reset();
-        self.changeTracker.setMapName(title.value);
+        self.changeTracker.setMapName(self.titleDisplay.value);
         // now we know the image size, calculate the mid coordinate
         midpointX = self.editor.getMidpointX();
         midpointY = self.editor.getMidpointY();
     }
 
     function setEditorButtonStatus(disabled) {
-        let editorBtns = document.getElementsByClassName("editorBtn");
+        let editorBtns = document.getElementsByClassName('editorBtn');
         for (let i = 0; i < editorBtns.length; i++) {
             editorBtns[i].disabled = disabled;
         }
     }
 
     function setStyle(styles) {
-        circleRadius = styles.circleRadius != 0 ? styles.circleRadius : circleRadius;
-        lineWidth = styles.lineWidth != 0 ? styles.lineWidth : lineWidth;
-        labelFontSize = styles.labelFontSize != 0 ? styles.labelFontSize : labelFontSize;
+        circleRadius = styles.circleRadius !== 0 ? styles.circleRadius : circleRadius;
+        lineWidth = styles.lineWidth !== 0 ? styles.lineWidth : lineWidth;
+        labelFontSize = styles.labelFontSize !== 0 ? styles.labelFontSize : labelFontSize;
         isBoldText = styles.isBoldText;
         // set the sliders to existing style values
-        document.getElementById("circleRadiusSlider").value = circleRadius;
-        document.getElementById("strokeWidthSlider").value = lineWidth;
-        document.getElementById("labelFontSizeSlider").value = labelFontSize;
-        document.getElementById("isBoldText").checked = isBoldText;
+        document.getElementById('circleRadiusSlider').value = circleRadius;
+        document.getElementById('strokeWidthSlider').value = lineWidth;
+        document.getElementById('labelFontSizeSlider').value = labelFontSize;
+        document.getElementById('isBoldText').checked = isBoldText;
     }
 
     function markDropdownSelection(selectedItem) {
         // mark the selection and return the selected item name
-        selectedItem.parentElement.parentElement.querySelector(".dropbtn").innerHTML = selectedItem.innerHTML;
+        selectedItem.parentElement.parentElement.querySelector('.dropbtn').innerHTML = selectedItem.innerHTML;
         return selectedItem.innerHTML;
     }
 
     function toggleDbConnection() {
         if (!self.dbConnected) {
             // show a confirmation box, because the editor will be cleared after the switch
-            if (confirm("Are you sure you want to CONNECT to database? " +
-                        "The svg editor will be CLEARED after the switch!")) {
-                if (self.statusBar.innerHTML === "Connected to ROS!") {
+            if (confirm('Are you sure you want to CONNECT to database? ' +
+                'The svg editor will be CLEARED after the switch!')) {
+                if (self.statusBar.innerHTML === 'Connected to ROS!') {
                     // connect to database
                     clearEditor();
-                    this.innerText = "Disconnect from Database";
+                    this.innerText = 'Disconnect from Database';
                     this.style.backgroundColor = DARK_YELLOW;
-                    self.dbManageBtn.style.display = "block";
-                    self.saveBtn.innerText = "Save to DB & Download";
+                    self.dbManageBtn.style.display = 'block';
+                    self.saveBtn.innerText = 'Save to DB & Download';
                     self.dbConnected = true;
                 } else {
-                    showHelpPopup("Cannot connect to database, please refresh the page.");
+                    showHelpPopup('Cannot connect to database, please refresh the page.');
                 }
             }
         } else {
             // disconnect from database
-            this.innerText = "Connect to Database";
+            this.innerText = 'Connect to Database';
             this.style.backgroundColor = GREEN;
-            self.dbManageBtn.style.display = "none";
-            self.saveBtn.innerText = "Download Image";
+            self.dbManageBtn.style.display = 'none';
+            self.saveBtn.innerText = 'Download Image';
             self.dbConnected = false;
             // remove the robot pose annotation
             self.editor.removeRobotPoseAnnotation(null);
@@ -809,17 +814,17 @@ $(function() {
     }
 
     function showManageDbPopup() {
-        self.manageDbPopup.style.display = "block";
+        self.manageDbPopup.style.display = 'block';
         // disable everything in the background
-        self.disableDiv.style.display = "block";
+        self.disableDiv.style.display = 'block';
         // call the ROS service to fetch names of all the maps
         let request = new ROSLIB.ServiceRequest({});
-        self.getMapsService.callService(request, function(result) {
-            self.mapListContainer.innerHTML = "";
+        self.getMapsService.callService(request, function (result) {
+            self.mapListContainer.innerHTML = '';
             let mapList = result.maps;
             for (let i = 0; i < mapList.length; i++) {
-                let mapEntryDiv = document.createElement("div");
-                let mapEntry = document.createElement("p");
+                let mapEntryDiv = document.createElement('div');
+                let mapEntry = document.createElement('p');
                 mapEntry.innerText = mapList[i];
                 mapEntryDiv.appendChild(mapEntry);
                 mapEntryDiv.appendChild(createDeleteMapBtn());
@@ -829,49 +834,49 @@ $(function() {
     }
 
     function createDeleteMapBtn() {
-        let deleteBtn = document.createElement("button");
-        deleteBtn.innerText = "DELETE";
-        deleteBtn.addEventListener("click", function() {
+        let deleteBtn = document.createElement('button');
+        deleteBtn.innerText = 'DELETE';
+        deleteBtn.addEventListener('click', function () {
             let mapEntryDiv = this.parentElement;
             let mapEntryName = mapEntryDiv.firstChild.innerText;
-            let deleteConfirm = confirm("Are you sure you want to DELETE the map named " + mapEntryName.toUpperCase() + "?");
-            if (deleteConfirm == true) {
+            let deleteConfirm = confirm('Are you sure you want to DELETE the map named ' + mapEntryName.toUpperCase() + '?');
+            if (deleteConfirm === true) {
                 // call the ROS service to delete the map
                 let request = new ROSLIB.ServiceRequest({
                     name: mapEntryName
                 });
-                self.deleteMapService.callService(request, function(result) {
+                self.deleteMapService.callService(request, function (result) {
                     self.mapListContainer.removeChild(mapEntryDiv);
                 });
             }
-        })
+        });
         return deleteBtn;
     }
 
     function showSavePopup() {
-        self.savePopup.style.display = "block";
+        self.savePopup.style.display = 'block';
         // disable everything in the background
-        self.disableDiv.style.display = "block";
+        self.disableDiv.style.display = 'block';
     }
 
     function resetAfterSaving() {
-        self.prevName = title.value;
+        self.prevName = self.titleDisplay.value;
         self.changeTracker.reset();
     }
 
     function showTooltip(type, text) {
-        document.getElementById(type + "Tooltip").style.visibility = "visible";
-        document.getElementById(type + "Tooltip").innerHTML = text;
+        document.getElementById(type + 'Tooltip').style.visibility = 'visible';
+        document.getElementById(type + 'Tooltip').innerHTML = text;
     }
 
     function hideTooltip(type) {
-        document.getElementById(type + "Tooltip").style.visibility = "hidden";
+        document.getElementById(type + 'Tooltip').style.visibility = 'hidden';
     }
 
     function hideAllTooltips() {
-        let tooltips = document.querySelectorAll(".tooltip");
+        let tooltips = document.querySelectorAll('.tooltip');
         for (let i = 0; i < tooltips.length; i++) {
-            tooltips[i].style.visibility = "hidden";
+            tooltips[i].style.visibility = 'hidden';
         }
     }
 
@@ -881,37 +886,37 @@ $(function() {
 
     function showTrackerPopup(content) {
         // display the pop up window
-        self.trackerPopup.style.display = "block";
+        self.trackerPopup.style.display = 'block';
         self.trackerPopupContent.innerHTML = content;
         // disable everything in the background
-        self.disableDiv.style.display = "block";
+        self.disableDiv.style.display = 'block';
     }
 
     function closeManageDbPopup() {
         // close the pop up window
-        self.manageDbPopup.style.display = "none";
+        self.manageDbPopup.style.display = 'none';
         // enable everything in the background
-        self.disableDiv.style.display = "none";
+        self.disableDiv.style.display = 'none';
     }
 
     function closeSavePopup() {
         // close the pop up window
-        self.savePopup.style.display = "none";
+        self.savePopup.style.display = 'none';
         // enable everything in the background
-        self.disableDiv.style.display = "none";
+        self.disableDiv.style.display = 'none';
     }
 
     function closeHelpPopup() {
         // close the pop up window
-        self.helpPopup.style.display = "none";
+        self.helpPopup.style.display = 'none';
         // enable everything in the background
-        self.disableDiv.style.display = "none";
+        self.disableDiv.style.display = 'none';
     }
 
     function closeTrackerPopup() {
         // close the pop up window
-        self.trackerPopup.style.display = "none";
+        self.trackerPopup.style.display = 'none';
         // enable everything in the background
-        self.disableDiv.style.display = "none";
+        self.disableDiv.style.display = 'none';
     }
 });
