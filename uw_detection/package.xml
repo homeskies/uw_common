@@ -14,4 +14,21 @@
   <exec_depend>catkin</exec_depend>
   <exec_depend>rospack</exec_depend>
 
+  <depend>cv_bridge</depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+
+  <build_depend>image_transport</build_depend>
+  <build_depend>octomap</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_eigen</build_depend>
+  <build_depend>message_filters</build_depend>
+
 </package>
