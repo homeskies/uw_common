@@ -164,7 +164,7 @@ std::map<std::string, Weights> loadWeights(const std::string file) {
             input >> std::hex >> val[x];
         }
         wt.values = val;
-        
+
         wt.count = size;
         weightMap[name] = wt;
     }
@@ -184,7 +184,7 @@ IScaleLayer* addBatchNorm2d(INetworkDefinition *network, std::map<std::string, W
         scval[i] = gamma[i] / sqrt(var[i] + eps);
     }
     Weights scale{DataType::kFLOAT, scval, len};
-    
+
     float *shval = reinterpret_cast<float*>(malloc(sizeof(float) * len));
     for (int i = 0; i < len; i++) {
         shval[i] = beta[i] - mean[i] * gamma[i] / sqrt(var[i] + eps);
@@ -310,7 +310,7 @@ ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilder
     auto lr75 = convBnLeaky(network, weightMap, *ew74->getOutput(0), 512, 1, 1, 0, 75);
     auto lr76 = convBnLeaky(network, weightMap, *lr75->getOutput(0), 1024, 3, 1, 1, 76);
     auto lr77 = convBnLeaky(network, weightMap, *lr76->getOutput(0), 512, 1, 1, 0, 77);
-    
+
     auto pool78 = network->addPoolingNd(*lr77->getOutput(0), PoolingType::kMAX, DimsHW{5,5});
     pool78->setPaddingNd(DimsHW{2, 2});
     pool78->setStrideNd(DimsHW{1, 1});
@@ -342,7 +342,7 @@ ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilder
     deconv92->setStrideNd(DimsHW{2, 2});
     deconv92->setNbGroups(256);
     weightMap["deconv92"] = deconvwts92;
-    
+
     ITensor* inputTensors[] = {deconv92->getOutput(0), ew61->getOutput(0)};
     auto cat93 = network->addConcatenation(inputTensors, 2);
     auto lr94 = convBnLeaky(network, weightMap, *cat93->getOutput(0), 256, 1, 1, 0, 94);
@@ -481,7 +481,7 @@ int main(int argc, char** argv) {
 
     if (argc == 2 && std::string(argv[1]) == "-s") {
         IHostMemory* modelStream{nullptr};
-        APIToModel(1, &modelStream, "../yolov3-spp_ultralytics68.wts");
+        APIToModel(1, &modelStream, "yolov3-spp_ultralytics68.wts");
         assert(modelStream != nullptr);
         std::ofstream p("yolov3-spp.engine", std::ios::binary);
         if (!p) {

@@ -2,7 +2,7 @@
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <uw_detection/yolov3-spp.h>
+#include <uw_detection/yolov3.h>
 #include <uw_detection/logging.h>
 #include <chrono>
 #include <uw_detection/yololayer.h>
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, "image_listener");
     std::string path = ros::package::getPath("uw_detection");
-  std::ifstream file(path + "/share/yolov3-spp.engine", std::ios::binary);
+  std::ifstream file(path + "/share/yolov3.engine", std::ios::binary);
   if (file.good()) {
     file.seekg(0, file.end);
     size = file.tellg();

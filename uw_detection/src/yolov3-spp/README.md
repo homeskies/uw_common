@@ -1,3 +1,7 @@
+This directory contains both the SPP and regular YOLOv3 implementations copied from tensorrtx. The minimum changes required to catkinize the code were applied; headers were moved into the package include directory, and the model API was exposed and modified to accept a path to weights file.
+
+
+
 # yolov3-spp
 
 yolov4 is [here](../yolov4).

@@ -4,7 +4,6 @@ project(uw_detection)
 find_package(catkin REQUIRED COMPONENTS   cv_bridge
         geometry_msgs
         image_transport
-        knowledge_representation
         message_generation
         message_filters
         message_runtime
@@ -55,11 +54,17 @@ cuda_add_library(yololayer SHARED src/yolov3-spp/yololayer.cu)
 add_library(yolov3-spp src/yolov3-spp/yolov3-spp.cpp)
 target_link_libraries(yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS})
 
-add_executable(yolov3_prepare_plan src/yolov3_spp_prepare_plan.cpp)
-target_link_libraries(yolov3_prepare_plan yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+add_library(yolov3 src/yolov3-spp/yolov3.cpp)
+target_link_libraries(yolov3 nvinfer cudart yololayer ${OpenCV_LIBS})
+
+add_executable(yolov3_spp_prepare_plan src/yolov3_spp_prepare_plan.cpp)
+target_link_libraries(yolov3_spp_prepare_plan yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+add_executable(yolov3_prepare_plan src/yolov3_prepare_plan.cpp)
+target_link_libraries(yolov3_prepare_plan yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_executable(yolo_ros_image_node src/yolo_ros_image_node.cpp)
-target_link_libraries(yolo_ros_image_node yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(yolo_ros_image_node yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_definitions(-O2 -pthread)
 endif()
