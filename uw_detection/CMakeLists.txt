@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS
         message_filters
         message_runtime
         roscpp
-        roslint
         sensor_msgs
         std_msgs
         std_srvs

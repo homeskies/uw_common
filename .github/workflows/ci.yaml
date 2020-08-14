@@ -7,6 +7,7 @@ jobs:
     env:
       AFTER_SCRIPT: 'cd $target_ws && rosenv && catkin build $(catkin list --depends-on roslint -u) --no-deps --no-status --verbose --make-args roslint'
       CATKIN_LINT: true
+      CATKIN_LINT_ARGS: "--ignore missing_directory --ignore external_link_directory"
       ROS_DISTRO: melodic
       ROS_REPO: main
     strategy:
