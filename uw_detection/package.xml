@@ -15,6 +15,7 @@
   <exec_depend>rospack</exec_depend>
 
   <depend>cv_bridge</depend>
+  <depend>object_cloud</depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>

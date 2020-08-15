@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
         message_generation
         message_filters
         message_runtime
+        object_cloud
         roscpp
         sensor_msgs
         std_msgs
@@ -64,6 +65,11 @@ target_link_libraries(yolov3_prepare_plan yolov3 nvinfer cudart yololayer ${Open
 
 add_executable(yolo_ros_image_node src/yolo_ros_image_node.cpp)
 target_link_libraries(yolo_ros_image_node yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+add_executable(yolocloud_node src/YoloCloudNode.cpp src/yolocloud_node.cpp)
+target_link_libraries(yolocloud_node yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+
 
 add_definitions(-O2 -pthread)
 endif()

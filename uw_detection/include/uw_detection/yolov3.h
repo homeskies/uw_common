@@ -8,6 +8,6 @@ void doInference(nvinfer1::IExecutionContext& context, float* input, float* outp
 
 cv::Mat preprocess_img(cv::Mat& img);
 
-cv::Rect get_rect(cv::Mat& img, float bbox[4]);
+cv::Rect get_rect(const cv::Mat& img, float bbox[4]);
 
 void nms(std::vector<Yolo::Detection>& res, float* output, float nms_thresh);
