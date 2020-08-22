@@ -6,7 +6,7 @@ namespace nvinfer1
 {
     YoloLayerPlugin::YoloLayerPlugin()
     {
-        mClassCount = CLASS_NUM;
+        mClassCount = 21;
         mYoloKernel.clear();
         mYoloKernel.push_back(yolo1);
         mYoloKernel.push_back(yolo2);

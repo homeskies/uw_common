@@ -56,12 +56,6 @@ target_link_libraries(yolov3-spp nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LI
 add_library(yolov3 src/yolov3-spp/yolov3.cpp)
 target_link_libraries(yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS})
 
-add_executable(yolov3_spp_prepare_plan src/yolov3_spp_prepare_plan.cpp)
-target_link_libraries(yolov3_spp_prepare_plan yolov3-spp nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
-
-add_executable(yolov3_prepare_plan src/yolov3_prepare_plan.cpp)
-target_link_libraries(yolov3_prepare_plan yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
-
 add_executable(yolo_ros_image_node src/yolo_ros_image_node.cpp)
 target_link_libraries(yolo_ros_image_node yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
