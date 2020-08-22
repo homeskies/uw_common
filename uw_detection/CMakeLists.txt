@@ -20,8 +20,7 @@ catkin_python_setup()
 
 catkin_package()
 
-
-option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -30,9 +29,9 @@ include_directories(OpenCV_INCLUDE_DIRS
         ${catkin_INCLUDE_DIRS}
         include)
 
-find_package(CUDA)
+find_package(CUDA REQUIRED)
+set(config)
 
-if (CUDA_FOUND)
 set(CUDA_NVCC_PLAGS ${CUDA_NVCC_PLAGS};-std=c++11;-g;-G;-gencode;arch=compute_30;code=sm_30)
 
 
@@ -52,20 +51,21 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Ofast -Wfatal-errors -
 cuda_add_library(yololayer SHARED src/yolov3-spp/yololayer.cu)
 
 add_library(yolov3-spp src/yolov3-spp/yolov3-spp.cpp)
-target_link_libraries(yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS})
+target_link_libraries(yolov3-spp nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS})
 
 add_library(yolov3 src/yolov3-spp/yolov3.cpp)
-target_link_libraries(yolov3 nvinfer cudart yololayer ${OpenCV_LIBS})
+target_link_libraries(yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS})
 
 add_executable(yolov3_spp_prepare_plan src/yolov3_spp_prepare_plan.cpp)
-target_link_libraries(yolov3_spp_prepare_plan yolov3-spp nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(yolov3_spp_prepare_plan yolov3-spp nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_executable(yolov3_prepare_plan src/yolov3_prepare_plan.cpp)
-target_link_libraries(yolov3_prepare_plan yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(yolov3_prepare_plan yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_executable(yolo_ros_image_node src/yolo_ros_image_node.cpp)
-target_link_libraries(yolo_ros_image_node yolov3 nvinfer cudart yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(yolo_ros_image_node yolov3 nvinfer ${CUDA_LIBRARIES} yololayer ${OpenCV_LIBS} ${catkin_LIBRARIES})
 
 add_definitions(-O2 -pthread)
-endif()
+
+
 
