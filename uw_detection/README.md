@@ -2,7 +2,7 @@
 
 Wrappers for detection models. Tools for preparing data and training.
 
-TensorRT YOLOv3 implementations taken from [tensorrtx](https://github.com/wang-xinyu/tensorrtx).
+TensorRT YOLOv3 implementations taken from [tensorrtx](https://github.com/wang-xinyu/tensorrtx). Additional modifactions based on [this implementation](https://github.com/jkjung-avt/tensorrt_demos/blob/master/plugins/yolo_layer.cu#L39)
 
 ## Usage
 
