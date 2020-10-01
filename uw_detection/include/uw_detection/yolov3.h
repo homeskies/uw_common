@@ -1,6 +1,7 @@
 #pragma once
 #include "NvInfer.h"
 #include <uw_detection/yololayer.h>
+#include <opencv2/opencv.hpp>
 
 void APIToModel(unsigned int maxBatchSize, nvinfer1::IHostMemory** modelStream, const std::string& weights_path);
 

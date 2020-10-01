@@ -27,6 +27,7 @@
 #define DEVICE 0  // GPU id
 #define NMS_THRESH 0.4
 #define BBOX_CONF_THRESH 0.5
+#define CLASS_NUM 21
 
 using namespace nvinfer1;
 
@@ -37,7 +38,6 @@ static const int OUTPUT_SIZE = 1000 * 7 + 1;  // we assume the yololayer outputs
 const char* INPUT_BLOB_NAME = "data";
 const char* OUTPUT_BLOB_NAME = "prob";
 static Logger gLogger;
-REGISTER_TENSORRT_PLUGIN(YoloPluginCreator);
 
 cv::Mat preprocess_img(cv::Mat& img) {
   int w, h, x, y;
@@ -61,7 +61,7 @@ cv::Mat preprocess_img(cv::Mat& img) {
   return out;
 }
 
-cv::Rect get_rect(cv::Mat& img, float bbox[4]) {
+cv::Rect get_rect(const cv::Mat& img, float bbox[4]) {
   int l, r, t, b;
   float r_w = INPUT_W / (img.cols * 1.0);
   float r_h = INPUT_H / (img.rows * 1.0);
@@ -313,7 +313,7 @@ ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilder
   auto lr78 = convBnLeaky(network, weightMap, *lr77->getOutput(0), 1024, 3, 1, 1, 78);
   auto lr79 = convBnLeaky(network, weightMap, *lr78->getOutput(0), 512, 1, 1, 0, 79);
   auto lr80 = convBnLeaky(network, weightMap, *lr79->getOutput(0), 1024, 3, 1, 1, 80);
-  IConvolutionLayer* conv81 = network->addConvolutionNd(*lr80->getOutput(0), 3 * (Yolo::CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.81.Conv2d.weight"], weightMap["module_list.81.Conv2d.bias"]);
+  IConvolutionLayer* conv81 = network->addConvolutionNd(*lr80->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.81.Conv2d.weight"], weightMap["module_list.81.Conv2d.bias"]);
   assert(conv81);
   // 82 is yolo
   auto l83 = lr79;
@@ -338,7 +338,7 @@ ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilder
   auto lr90 = convBnLeaky(network, weightMap, *lr89->getOutput(0), 512, 3, 1, 1, 90);
   auto lr91 = convBnLeaky(network, weightMap, *lr90->getOutput(0), 256, 1, 1, 0, 91);
   auto lr92 = convBnLeaky(network, weightMap, *lr91->getOutput(0), 512, 3, 1, 1, 92);
-  IConvolutionLayer* conv93 = network->addConvolutionNd(*lr92->getOutput(0), 3 * (Yolo::CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.93.Conv2d.weight"], weightMap["module_list.93.Conv2d.bias"]);
+  IConvolutionLayer* conv93 = network->addConvolutionNd(*lr92->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.93.Conv2d.weight"], weightMap["module_list.93.Conv2d.bias"]);
   assert(conv93);
   // 94 is yolo
   auto l95 = lr91;
@@ -356,12 +356,17 @@ ICudaEngine* createEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilder
   auto lr102 = convBnLeaky(network, weightMap, *lr101->getOutput(0), 256, 3, 1, 1, 102);
   auto lr103 = convBnLeaky(network, weightMap, *lr102->getOutput(0), 128, 1, 1, 0, 103);
   auto lr104 = convBnLeaky(network, weightMap, *lr103->getOutput(0), 256, 3, 1, 1, 104);
-  IConvolutionLayer* conv105 = network->addConvolutionNd(*lr104->getOutput(0), 3 * (Yolo::CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.105.Conv2d.weight"], weightMap["module_list.105.Conv2d.bias"]);
+  IConvolutionLayer* conv105 = network->addConvolutionNd(*lr104->getOutput(0), 3 * (CLASS_NUM + 5), DimsHW{1, 1}, weightMap["module_list.105.Conv2d.weight"], weightMap["module_list.105.Conv2d.bias"]);
   assert(conv105);
 
   auto creator = getPluginRegistry()->getPluginCreator("YoloLayer_TRT", "1");
-  const PluginFieldCollection* pluginData = creator->getFieldNames();
-  IPluginV2 *pluginObj = creator->createPlugin("yololayer", pluginData);
+  auto class_num = CLASS_NUM;
+  std::vector<PluginField> vpf{
+      PluginField{"numClasses", &class_num, PluginFieldType::kINT32, 1}
+  };
+
+  PluginFieldCollection pfc{ (int)vpf.size(), vpf.data() };
+  IPluginV2 *pluginObj = creator->createPlugin("yololayer", &pfc);
   ITensor* inputTensors_yolo[] = {conv81->getOutput(0), conv93->getOutput(0), conv105->getOutput(0)};
   auto yolo = network->addPluginV2(inputTensors_yolo, 3, *pluginObj);
 

@@ -37,7 +37,6 @@ static const int OUTPUT_SIZE = 1000 * 7 + 1;  // we assume the yololayer outputs
 const char* INPUT_BLOB_NAME = "data";
 const char* OUTPUT_BLOB_NAME = "prob";
 static Logger gLogger;
-REGISTER_TENSORRT_PLUGIN(YoloPluginCreator);
 
 cv::Mat preprocess_img(cv::Mat& img) {
     int w, h, x, y;
@@ -61,7 +60,7 @@ cv::Mat preprocess_img(cv::Mat& img) {
     return out;
 }
 
-cv::Rect get_rect(cv::Mat& img, float bbox[4]) {
+cv::Rect get_rect(const cv::Mat& img, float bbox[4]) {
     int l, r, t, b;
     float r_w = INPUT_W / (img.cols * 1.0);
     float r_h = INPUT_H / (img.rows * 1.0);

@@ -4,9 +4,9 @@ using namespace Yolo;
 
 namespace nvinfer1
 {
-    YoloLayerPlugin::YoloLayerPlugin()
+    YoloLayerPlugin::YoloLayerPlugin(int num_classes)
     {
-        mClassCount = CLASS_NUM;
+        mClassCount = num_classes;
         mYoloKernel.clear();
         mYoloKernel.push_back(yolo1);
         mYoloKernel.push_back(yolo2);
@@ -126,7 +126,7 @@ namespace nvinfer1
     // Clone the plugin
     IPluginV2IOExt* YoloLayerPlugin::clone() const
     {
-        YoloLayerPlugin *p = new YoloLayerPlugin();
+        YoloLayerPlugin *p = new YoloLayerPlugin(mClassCount);
         p->setPluginNamespace(mPluginNamespace);
         return p;
     }
@@ -220,6 +220,11 @@ namespace nvinfer1
     YoloPluginCreator::YoloPluginCreator()
     {
         mPluginAttributes.clear();
+        mPluginAttributes.emplace_back(PluginField("numClasses", nullptr, PluginFieldType::kINT32, 1));
+        mPluginAttributes.emplace_back(PluginField("yoloWidth", nullptr, PluginFieldType::kINT32, 1));
+        mPluginAttributes.emplace_back(PluginField("yoloHeight", nullptr, PluginFieldType::kINT32, 1));
+        mPluginAttributes.emplace_back(PluginField("inputWidth", nullptr, PluginFieldType::kINT32, 1));
+        mPluginAttributes.emplace_back(PluginField("inputHeight", nullptr, PluginFieldType::kINT32, 1));
 
         mFC.nbFields = mPluginAttributes.size();
         mFC.fields = mPluginAttributes.data();
@@ -242,7 +247,50 @@ namespace nvinfer1
 
     IPluginV2IOExt* YoloPluginCreator::createPlugin(const char* name, const PluginFieldCollection* fc)
     {
-        YoloLayerPlugin* obj = new YoloLayerPlugin();
+        //assert(!strcmp(name, getPluginName()));
+        const PluginField* fields = fc->fields;
+        int yolo_width, yolo_height, num_anchors = 0;
+        int num_classes;
+        int input_width, input_height;
+
+        for (int i = 0; i < fc->nbFields; ++i)
+        {
+          const char* attrName = fields[i].name;
+          if (!strcmp(attrName, "yoloWidth"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            yolo_width = *(static_cast<const int*>(fields[i].data));
+          }
+          else if (!strcmp(attrName, "yoloHeight"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            yolo_height = *(static_cast<const int*>(fields[i].data));
+          }
+          else if (!strcmp(attrName, "numAnchors"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            num_anchors = *(static_cast<const int*>(fields[i].data));
+          }
+          else if (!strcmp(attrName, "numClasses"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            num_classes = *(static_cast<const int*>(fields[i].data));
+          }
+          else if (!strcmp(attrName, "inputWidth"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            input_width = *(static_cast<const int*>(fields[i].data));
+          }
+          else if (!strcmp(attrName, "inputHeight"))
+          {
+            assert(fields[i].type == PluginFieldType::kINT32);
+            input_height = *(static_cast<const int*>(fields[i].data));
+          }
+        }
+        //assert(yolo_width > 0 && yolo_height > 0);
+        //assert(num_classes > 0);
+        //assert(input_width > 0 && input_height > 0);
+        YoloLayerPlugin* obj = new YoloLayerPlugin(num_classes);
         obj->setPluginNamespace(mNamespace.c_str());
         return obj;
     }

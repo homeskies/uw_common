@@ -14,7 +14,6 @@ namespace Yolo
     static constexpr int CHECK_COUNT = 3;
     static constexpr float IGNORE_THRESH = 0.1f;
     static constexpr int MAX_OUTPUT_BBOX_COUNT = 1000;
-    static constexpr int CLASS_NUM = 80;
     static constexpr int INPUT_H = 608;
     static constexpr int INPUT_W = 608;
 
@@ -57,7 +56,7 @@ namespace nvinfer1
     class YoloLayerPlugin: public IPluginV2IOExt
     {
         public:
-            explicit YoloLayerPlugin();
+            explicit YoloLayerPlugin(int num_classes);
             YoloLayerPlugin(const void* data, size_t length);
 
             ~YoloLayerPlugin();
@@ -151,7 +150,7 @@ namespace nvinfer1
             static PluginFieldCollection mFC;
             static std::vector<PluginField> mPluginAttributes;
     };
-
+    REGISTER_TENSORRT_PLUGIN(YoloPluginCreator);
 
 
 };
