@@ -1,0 +1,3 @@
+object_cloud/SearchBox search_box
+---
+object_cloud/DetectedObject[] objects

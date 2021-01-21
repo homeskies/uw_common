@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>object_cloud</name>
+  <version>0.0.0</version>
+  <description>The villa_object_cloud package</description>
+
+  <maintainer email="nswalker@cs.washington.edu">Nick Walker</maintainer>
+  <maintainer email="jiangyuqian@utexas.edu">Yuqian Jiang</maintainer>
+
+  <license>BSD</license>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>cv_bridge</depend>
+  <depend>geometry_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>knowledge_representation</depend>
+  <depend>message_generation</depend>
+  <depend>message_runtime</depend>
+  <depend>octomap_ros</depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>visualization_msgs</depend>
+
+
+  <build_depend>octomap</build_depend>
+  <build_depend>roslint</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_eigen</build_depend>
+  <build_depend>message_filters</build_depend>
+
+  <build_export_depend>std_srvs</build_export_depend>
+
+
+  <export>
+  </export>
+</package>

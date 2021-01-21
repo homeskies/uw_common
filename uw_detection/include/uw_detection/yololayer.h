@@ -16,6 +16,7 @@ namespace Yolo
     static constexpr int MAX_OUTPUT_BBOX_COUNT = 1000;
     static constexpr int INPUT_H = 608;
     static constexpr int INPUT_W = 608;
+    static constexpr int CLASS_NUM = 21;
 
     struct YoloKernel
     {
